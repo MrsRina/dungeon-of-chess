@@ -18,7 +18,6 @@ bool util::file::exists(const char* path) {
 std::string util::file::read(const char* path) {
 	FILE* f = fopen(path, "r");
 
-	char* code;
 	size_t n = 0;
 	int32_t c;
 
@@ -30,15 +29,14 @@ std::string util::file::read(const char* path) {
 	uint64_t f_size = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
-	code = new char[f_size];
+	char code[f_size];
 
 	while((c = fgetc(f)) != EOF) {
 		code[n++] = (char) c;
 	}
 
 	fclose(f);
+	
 	std::string copy(code);
-
-	delete[] code;
 	return copy;
 }
