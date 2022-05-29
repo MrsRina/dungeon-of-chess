@@ -32,7 +32,7 @@ int main(int argv, char** argc) {
 	// Setup OpenGL core.
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	// Clock variables.
@@ -49,6 +49,7 @@ int main(int argv, char** argc) {
 
 	// Logs.
 	util::log("SDL2 and OpenGL setup successfully.");
+	std::cout << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
 	// Init the tools.
 	tessellator::init();

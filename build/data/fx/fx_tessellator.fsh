@@ -1,8 +1,8 @@
 #version 330 core
 
-out vec4 fragment_material_color;
-in vec4 material_color;
+out vec4 FragColor;
+in vec4 vertex_color;
 
 void main() {
-    fragment_material_color = material_color;
+	FragColor = vertex_color;
 }
