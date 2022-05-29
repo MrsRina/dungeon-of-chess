@@ -3,18 +3,16 @@
 #include "includes.h"
 
 struct shader {
-	GLuint vertex, fragment;
+	GLuint program, vertex, fragment;
 	bool compiled;
 };
 
 class shader_manager {
-protected:
-	GLuint program;
 public:
-	void init();
+	static void init();
 
-	GLuint check_vertex_shader(const char* vertex_shader_path);
-	GLuint check_fragment_shader(const char& fragment_shader_path);
+	static GLuint check_vertex_shader(const char* vertex_shader_path);
+	static GLuint check_fragment_shader(const char* fragment_shader_path);
 
-	shader &compile_shader(const char* vertex_shader_path, const char* fragment_shader_path);
+	static bool compile_shader(shader &_shader, const char* vertex_shader_path, const char* fragment_shader_path);
 };

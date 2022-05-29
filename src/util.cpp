@@ -15,7 +15,7 @@ bool util::file::exists(const char* path) {
 	return flag;
 }
 
-void util::file::read(const char* path) {
+std::string util::file::read(const char* path) {
 	std::ifstream ifs(path);
-	return std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	return std::string((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 }

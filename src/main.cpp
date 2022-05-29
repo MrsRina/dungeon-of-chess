@@ -19,7 +19,7 @@ int main(int argv, char** argc) {
 
 	// Init SDL2 and create window.
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_Window* sdl_win = SDL_CreateWindow("Oi sou linda.", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL);
+	SDL_Window* sdl_win = SDL_CreateWindow("Dungeon Of SDL2.", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL);
 	
 	// Setup OpenGL core.
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -40,8 +40,8 @@ int main(int argv, char** argc) {
 	uint32_t fps            = 0;
 
 	// Test.
-	const std::string file = read_file("oi_sou.linda");
-	util::log(file);
+	//const std::string file = read_file("oi_sou.linda");
+	//util::log(file);
 
 	// Logs.
 	util::log("Program initialized successfully.");
