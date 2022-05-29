@@ -1,6 +1,9 @@
-#pragma 
+#pragma once
 
 #include "includes.h"
+
+#ifndef SHADER_MANAGER_H
+#define SHADER_MANAGER_H
 
 struct shader {
 	GLuint program, vertex, fragment;
@@ -16,3 +19,5 @@ public:
 
 	static bool compile_shader(shader &_shader, const char* vertex_shader_path, const char* fragment_shader_path);
 };
+
+#endif

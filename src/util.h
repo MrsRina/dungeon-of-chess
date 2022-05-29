@@ -2,6 +2,9 @@
 
 #include "includes.h"
 
+#ifndef UTIL_H
+#define UTIL_H
+
 struct util {
 	static void log(const std::string &log_str);
 
@@ -10,3 +13,5 @@ struct util {
 		static std::string read(const char* path);
 	};
 };
+
+#endif

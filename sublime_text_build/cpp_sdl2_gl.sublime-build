@@ -1,3 +1,3 @@
 {
-	"shell_cmd": "g++ *.cpp -o \"$folder//build//dungeon_of_sdl2_64x\" -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lglew32 && $folder//build//dungeon_of_sdl2_64x"
+	"shell_cmd": "g++ -g *.cpp -o \"$folder//build//dungeon_of_sdl2_64x\" -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lglew32 && cd.. && cd build & dungeon_of_sdl2_64x"
 }

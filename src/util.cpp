@@ -16,6 +16,29 @@ bool util::file::exists(const char* path) {
 }
 
 std::string util::file::read(const char* path) {
-	std::ifstream ifs(path);
-	return std::string((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+	FILE* f = fopen(path, "r");
+
+	char* code;
+	size_t n = 0;
+	int32_t c;
+
+	if (f == NULL) {
+		return "";
+	}
+
+	fseek(f, 0, SEEK_END);
+	uint64_t f_size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	code = new char[f_size];
+
+	while((c = fgetc(f)) != EOF) {
+		code[n++] = (char) c;
+	}
+
+	fclose(f);
+	std::string copy(code);
+
+	delete[] code;
+	return copy;
 }

@@ -1,5 +1,6 @@
 #include "includes.h"
 #include "util.h"
+#include "tessellator.h"
 
 void on_update(uint64_t delta) {
 
@@ -13,23 +14,26 @@ void on_render(float render_ticks) {
 int main(int argv, char** argc) {
 	bool running = true;
 
-	// Init glew.
-	glewExperimental = GL_TRUE;
-	glewInit();
-
 	// Init SDL2 and create window.
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Window* sdl_win = SDL_CreateWindow("Dungeon Of SDL2.", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL);
 	
-	// Setup OpenGL core.
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
 	// Create OpenGL context in SDL2.
 	SDL_GLContext sdl_gl_context = SDL_GL_CreateContext(sdl_win);
 	SDL_Event sdl_event;
+
+	// Init glew.
+	glewExperimental = GL_TRUE;
+	if (glewInit()) {
+		util::log("Nooo :(, glew does not want to init.");
+		running = false;
+	}
+
+	// Setup OpenGL core.
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	// Clock variables.
 	uint64_t previous_ticks = SDL_GetTicks64();
@@ -44,7 +48,10 @@ int main(int argv, char** argc) {
 	//util::log(file);
 
 	// Logs.
-	util::log("Program initialized successfully.");
+	util::log("SDL2 and OpenGL setup successfully.");
+
+	// Init the tools.
+	tessellator::init();
 
 	while (running) {
 		while (SDL_PollEvent(&sdl_event)) {
@@ -62,13 +69,6 @@ int main(int argv, char** argc) {
 			previous_ticks = SDL_GetTicks64();
 			delta += current_ticks;
 
-			// Reset delta if needed.
-			if (delta > 1000) {
-				fps = elapsed_frames;
-				elapsed_frames = 0;
-				delta = 0;
-			}
-
 			// Update and render.
 			on_update(delta);
 			on_render((float) current_ticks);
@@ -76,10 +76,20 @@ int main(int argv, char** argc) {
 			// Count elapsed frames after render.
 			elapsed_frames++;
 
+			// Reset delta if needed.
+			if (delta > 1000) {
+				fps = elapsed_frames;
+				elapsed_frames = 0;
+				delta = 0;
+			}
+
 			// Swap buffers.
 			SDL_GL_SwapWindow(sdl_win);
 		}
 	}
+
+	SDL_Quit();
+	util::log("Shutdown complete!");
 
 	return 0;
 }
