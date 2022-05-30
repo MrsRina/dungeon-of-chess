@@ -164,11 +164,17 @@ void on_render(float render_ticks) {
 	tessellator::fx(fx_manager::mouse_outline_fx);
 	util::render::shape(10, 10, 200, 200, util::color(255, 255, 255, 255));
 	tessellator::fx();
+
+	tessellator::start(GL_LINE_STRIP, 2);
+	tessellator::vertex(200, 200, 0);
+	tessellator::color(255, 255, 255, 255);
+	tessellator::vertex(200, 600, 0);
+	tessellator::color(255, 255, 255, 255);
+	tessellator::draw();
 }
 
 int main(int argv, char** argc) {
 	bool running = true;
-
 	uint32_t screen_w = 800, screen_h = 600;
 
 	// Init SDL2 and create window.

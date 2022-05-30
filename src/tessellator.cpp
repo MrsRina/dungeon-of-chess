@@ -39,10 +39,10 @@ void tessellator::vertex(float x, float y, float z) {
 	concurrent_vertex_data.push_back(z);
 }
 
-void tessellator::color(float x, float y, float z) {
-	concurrent_material_data.push_back(x);
-	concurrent_material_data.push_back(y);
-	concurrent_material_data.push_back(z);
+void tessellator::color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+	concurrent_material_data.push_back((float) r / 255.0f);
+	concurrent_material_data.push_back((float) g / 255.0f);
+	concurrent_material_data.push_back((float) b / 255.0f);
 }
 
 void tessellator::draw() {
@@ -79,6 +79,7 @@ void tessellator::draw() {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	linethickness(1.0f);
 	tessellator_shader.end();
 }
 
@@ -124,6 +125,7 @@ void tessellator::draw(GLfloat* vertex_data, GLfloat* material_data) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	linethickness(1.0f);
 	tessellator_shader.end();
 }
 
