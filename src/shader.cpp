@@ -1,64 +1,49 @@
 #include "shader.h"
 #include "util.h"
 
-GLuint shader_manager::check_vertex_shader(const char* vertex_shader_path) {
-	std::string data_str = util::file::read(vertex_shader_path);
-	const char* data = data_str.c_str();
-	GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-
-	glShaderSource(vertex_shader, 1, &data, NULL);
-	glCompileShader(vertex_shader);
-
-	GLint shader_compile_status = GL_FALSE;
-	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &shader_compile_status);
-
-	if (shader_compile_status != GL_TRUE) {
-		char log[1024];
-		glGetShaderInfoLog(vertex_shader, 1024, NULL, log);
-
-		util::log(vertex_shader_path);
-		util::log(log);
-		return 0;
-	}
-
-	return vertex_shader;
+void shader::use() {
+	glUseProgram(this->program);
 }
 
-GLuint shader_manager::check_fragment_shader(const char* fragment_shader_path) {
-	std::string data_str = util::file::read(fragment_shader_path);
-	const char* data = data_str.c_str();
-	GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+void shader::end() {
+	glUseProgram(0);
+}
 
-	glShaderSource(fragment_shader, 1, &data, NULL);
-	glCompileShader(fragment_shader);
+GLuint shader_manager::check_compile(GLint mode, const char* shader_path) {
+	std::string data_str = util::file::read(shader_path);
+	const char* data = data_str.c_str();
+
+	GLuint shader = glCreateShader(mode);
+
+	glShaderSource(shader, 1, &data, NULL);
+	glCompileShader(shader);
 
 	GLint shader_compile_status = GL_FALSE;
-	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &shader_compile_status);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &shader_compile_status);
 
 	if (shader_compile_status != GL_TRUE) {
-		char log[1024];
-		glGetShaderInfoLog(fragment_shader, 1024, NULL, log);
+		char log[256];
+		glGetShaderInfoLog(shader, 256, NULL, log);
 
-		util::log(fragment_shader_path);
+		util::log(shader_path);
 		util::log(log);
 		return 0;
 	}
 
-	return fragment_shader;
+	return shader;
 }
 
 bool shader_manager::compile_shader(shader &_shader, const char* vertex_shader_path, const char* fragment_shader_path) {
 	GLuint vertex_shader, fragment_shader;
 
-	_shader.program = glCreateProgram();
 	_shader.compiled = true;
 
 	if (util::file::exists(vertex_shader_path)) {
-		vertex_shader = check_vertex_shader(vertex_shader_path);
+		vertex_shader = check_compile(GL_VERTEX_SHADER, vertex_shader_path);
 		_shader.vertex = vertex_shader;
 
 		if (vertex_shader != 0) {
-			glAttachShader(_shader.program, vertex_shader);
+			util::log(std::string(vertex_shader_path) + " compiled.");
 		} else {
 			_shader.compiled = false;
 		}
@@ -67,11 +52,11 @@ bool shader_manager::compile_shader(shader &_shader, const char* vertex_shader_p
 	}
 
 	if (util::file::exists(fragment_shader_path)) {
-		fragment_shader = check_fragment_shader(fragment_shader_path);
+		fragment_shader = check_compile(GL_FRAGMENT_SHADER, fragment_shader_path);
 		_shader.fragment = fragment_shader;
 
 		if (fragment_shader != 0) {
-			glAttachShader(_shader.program, fragment_shader);
+			util::log(std::string(fragment_shader_path) + " compiled.");
 		} else {
 			_shader.compiled = false;
 		}
@@ -80,13 +65,21 @@ bool shader_manager::compile_shader(shader &_shader, const char* vertex_shader_p
 	}
 
 	if (_shader.compiled) {
+		_shader.program = glCreateProgram();
+
+		glAttachShader(_shader.program, vertex_shader);
+		glAttachShader(_shader.program, fragment_shader);
 		glLinkProgram(_shader.program);
 
 		GLint compiled = GL_FALSE;
 		glGetProgramiv(_shader.program, GL_LINK_STATUS, &compiled);
 
-		if (compiled != GL_TRUE) {
+		if (compiled == 0) {
+			char log[256];
+			glGetProgramInfoLog(_shader.program, 256, NULL, log);
+
 			util::log("Failed to link program.");
+			util::log(log);
 		}
 
 		glDeleteShader(vertex_shader);

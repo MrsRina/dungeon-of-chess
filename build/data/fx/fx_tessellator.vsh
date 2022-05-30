@@ -1,9 +1,12 @@
 #version 330 core
 
-layout (location = 0) in vec3 a_pos;
-out vec4 vertex_color;
+in vec4 attribute_pos;
+in vec4 attribute_material;
+
+out vec4 varying_material;
+uniform mat4 proj_matrix;
 
 void main() {
-	gl_Position = vec4(a_pos, 1.0);
-	vertex_color = vec4(0.5, 0.0, 0.0, 1.0);
+	gl_Position = proj_matrix * attribute_pos;
+	varying_material = attribute_material;
 }

@@ -7,8 +7,43 @@ void on_update(uint64_t delta) {
 }
 
 void on_render(float render_ticks) {
+	float viewport[4];
+	glGetFloatv(GL_VIEWPORT, viewport);
+
+	float proj_mat[16];
+	util::math::ortho2d(proj_mat, 0.0f, viewport[2], viewport[3], 0.0f);
+
+	// Set the proj matrix in shader.
+	tessellator::context(proj_mat);
+
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+	float x = 10;
+	float y = 10;
+	float w = 200;
+	float h = 200;
+
+	float vertex[18] = {
+		x, y, 0,
+		x, y + h, 0,
+		x + w, y + h, 0,
+		x + w, y + h, 0,
+		x + w, y, 0,
+		x, y, 0
+	};
+
+	float color[24] = {
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1
+	};
+
+	tessellator::start(GL_TRIANGLES, 6);
+	tessellator::draw(18, 24, vertex, color);
 }
 
 int main(int argv, char** argc) {

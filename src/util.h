@@ -12,6 +12,13 @@ struct util {
 		static bool exists(const char* path);
 		static std::string read(const char* path);
 	};
+
+	struct math {
+		/**
+		 * I took from wiki.
+		 **/
+		static void ortho2d(float* mat, float left, float right, float bottom, float top);
+	};
 };
 
 #endif

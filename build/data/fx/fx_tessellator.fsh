@@ -1,8 +1,7 @@
 #version 330 core
 
-out vec4 FragColor;
-in vec4 vertex_color;
+in vec4 varying_material;
 
 void main() {
-	FragColor = vertex_color;
+	gl_FragColor = varying_material;
 }
