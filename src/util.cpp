@@ -1,4 +1,21 @@
 #include "util.h"
+#include "tessellator.h"
+
+float util::color::redf() {
+	return (float) this->r / 255.0f;
+}
+
+float util::color::greenf() {
+	return (float) this->g / 255.0f;
+}
+
+float util::color::bluef() {
+	return (float) this->b / 255.0f;
+}
+
+float util::color::alphaf() {
+	return (float) this->a / 255.0f;
+}
 
 void util::log(const std::string &log_str) {
 	std::string formated = "[MAIN] " + log_str;
@@ -63,4 +80,133 @@ void util::math::ortho2d(float* mat, float left, float right, float bottom, floa
     *mat++ = (-(top + bottom) * inv_y);
     *mat++ = (-(zFar + zNear) * inv_z);
     *mat++ = (1.0f);
+}
+
+void util::render::shape(float x, float y, float w, float h, util::color color) {
+	uint8_t i = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	float r = color.redf(), g = color.greenf(), b = color.bluef(), a = color.alphaf();
+	i = 0;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	tessellator::start(GL_TRIANGLE_STRIP, 6, 18, 24);
+	tessellator::draw(mask_shape_vertex, mask_shape_material_color);
+}
+
+void util::render::shape_outline(float x, float y, float w, float h, float line_thickness, util::color color) {
+	uint8_t i = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	float r = color.redf(), g = color.greenf(), b = color.bluef(), a = color.alphaf();
+	i = 0;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	mask_shape_material_color[i++] = r;
+	mask_shape_material_color[i++] = g;
+	mask_shape_material_color[i++] = b;
+	mask_shape_material_color[i++] = a;
+
+	tessellator::start(GL_LINE_STRIP, 6, 18, 24);
+	tessellator::linethickness(line_thickness);
+	tessellator::draw(mask_shape_vertex, mask_shape_material_color);
 }

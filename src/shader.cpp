@@ -1,12 +1,36 @@
 #include "shader.h"
 #include "util.h"
 
+float shader_manager::matrix_proj_ortho[16];
+float shader_manager::viewport[4];
+
 void shader::use() {
 	glUseProgram(this->program);
 }
 
 void shader::end() {
 	glUseProgram(0);
+}
+
+void shader::set_matrix(float* matrix) {
+	glUniformMatrix4fv(glGetUniformLocation(this->program, "matrix"), 1, GL_FALSE, matrix);
+}
+
+void shader::set_bool(const std::string &name, bool value) {
+	glUniform1i(glGetUniformLocation(this->program, name.c_str()), (int) value);
+};
+
+void shader::set_int(const std::string &name, int value) {
+	glUniform1i(glGetUniformLocation(this->program, name.c_str()), value);
+};
+
+void shader::set_float(const std::string &name, float value) {
+	glUniform1f(glGetUniformLocation(this->program, name.c_str()), value);
+};
+
+void shader_manager::context() {
+	glGetFloatv(GL_VIEWPORT, viewport);
+	util::math::ortho2d(shader_manager::matrix_proj_ortho, 0.0f, viewport[2], viewport[3], 0.0f);
 }
 
 GLuint shader_manager::check_compile(GLint mode, const char* shader_path) {
@@ -87,4 +111,31 @@ bool shader_manager::compile_shader(shader &_shader, const char* vertex_shader_p
 	}
 
 	return _shader.compiled;
+}
+
+shader fx_manager::mouse_outline_fx = shader();
+shader fx_manager::default_fx       = shader();
+
+void fx_manager::init() {
+	if (!shader_manager::compile_shader(mouse_outline_fx, "data/fx/fx_mouse_outline.vsh", "data/fx/fx_mouse_outline.fsh")) {
+		util::log("Could not load 'mouse outline' fx.");
+	}
+
+	if (!shader_manager::compile_shader(default_fx, "data/fx/fx_default.vsh", "data/fx/fx_default.fsh")) {
+		util::log("Could not load 'default' fx.");
+	}
+
+	util::log("All fx effects initialized.");
+}
+
+void fx_manager::context() {
+	mouse_outline_fx.use();
+	mouse_outline_fx.set_matrix(shader_manager::matrix_proj_ortho);
+	mouse_outline_fx.set_float("w", shader_manager::viewport[2]);
+	mouse_outline_fx.set_float("h", shader_manager::viewport[3]);
+	mouse_outline_fx.end();
+
+	default_fx.use();
+	default_fx.set_matrix(shader_manager::matrix_proj_ortho);
+	default_fx.end();
 }
