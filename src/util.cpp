@@ -50,6 +50,36 @@ std::string util::file::read(const char* path) {
 	return string_builder;
 }
 
+bool util::file::read_texture(util::texture &texture, GLenum format, const char* path) {
+	SDL_Surface* surface = IMG_Load(path);
+
+	if (surface == NULL) {
+		util::log(std::string(path) + " could not load image.");
+		return false;
+	}
+
+	texture.width = surface->w;
+	texture.height = surface->h;
+
+	// Create texture id and bind it.
+	glGenTextures(1, &texture.id);
+	glBindTexture(GL_TEXTURE_2D, texture.id);
+
+	GLint internal_format = format;
+
+	// dispatch texture into "memory".
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, surface->w, surface->h, 0, format, GL_UNSIGNED_BYTE, surface->pixels);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Free surface after use.
+	SDL_FreeSurface(surface);
+
+	return true;
+}
+
 void util::math::ortho2d(float* mat, float left, float right, float bottom, float top) {
     const float zNear = -1.0f;
     const float zFar = 1.0f;
@@ -210,3 +240,5 @@ void util::render::shape_outline(float x, float y, float w, float h, float line_
 	tessellator::linethickness(line_thickness);
 	tessellator::draw(mask_shape_vertex, mask_shape_material_color);
 }
+
+void util

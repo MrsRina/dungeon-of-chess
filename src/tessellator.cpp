@@ -45,6 +45,11 @@ void tessellator::color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	concurrent_material_data.push_back((float) b / 255.0f);
 }
 
+void tessellator::uv(float u, float v) {
+	concurrent_material_data.push_back(u);
+	concurrent_material_data.push_back(v);
+}
+
 void tessellator::draw() {
 	tessellator_shader.use();
 
@@ -69,7 +74,7 @@ void tessellator::draw() {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * concurrent_vertex_data.size(), &concurrent_vertex_data[0], GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_material);
-	glVertexAttribPointer(attribute_material, 4, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+	glVertexAttribPointer(attribute_material, bind_texture != 0 ? 2 : 4, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * concurrent_material_data.size(), &concurrent_material_data[0], GL_DYNAMIC_DRAW);
 
 	glDrawArrays(draw_mode, 0, draw_count);
@@ -115,7 +120,7 @@ void tessellator::draw(GLfloat* vertex_data, GLfloat* material_data) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * draw_vertex_count, vertex_data, GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_material);
-	glVertexAttribPointer(attribute_material, 4, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+	glVertexAttribPointer(attribute_material, bind_texture_id != 0 ? 2 : 4, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * draw_material_count, material_data, GL_DYNAMIC_DRAW);
 
 	glDrawArrays(draw_mode, 0, draw_count);

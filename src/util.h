@@ -28,9 +28,18 @@ struct util {
 		float alphaf();
 	};
 
+	struct texture {
+		bool loaded;
+		GLuint id;
+
+		uint32_t width;
+		uint32_t height;
+	};
+
 	struct file {
 		static bool exists(const char* path);
 		static std::string read(const char* path);
+		static bool read_texture(util::texture &texture, GLenum format, const char* path);
 	};
 
 	struct math {
@@ -43,6 +52,7 @@ struct util {
 	struct render {
 		static void shape(float x, float y, float w, float h, util::color color);
 		static void shape_outline(float x, float y, float w, float h, float line_thickness, util::color color);
+		static void shape_texture(float x, float y, float w, float h, float tx, float ty, float tw, float th, util::texture &texture);
 	};
 };
 

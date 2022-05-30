@@ -9,9 +9,10 @@ struct entity_piece {
 	bool alive;
 
 	uint8_t death_master;
-	uint8_t texture_id;
+	util::texture texture_id;
 
 	void on_render(float render_ticks) {
+
 	};
 };
 
@@ -38,10 +39,18 @@ struct chess {
 	float x, y, w, h, square_size;
 
 	uint8_t alpha;
+	
+	util::texture chess_symbols_texture;
 	util::color color_white = util::color(255, 255, 255, 255), color_black = util::color(0, 0, 0, 255);
 
 	void init() {
 		this->refresh();
+
+		if (!util::file::read_texture(this->chess_symbols_texture, GL_RGBA, "data/textures/chess-symbols.png")) {
+			util::log("Could not load chess symbols texture.");
+		}
+
+		util::log("Chess game core initialized.");
 	}
 
 	void refresh() {
@@ -181,6 +190,9 @@ int main(int argv, char** argc) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Window* sdl_win = SDL_CreateWindow("Dungeon Of SDL2.", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_w, screen_h, SDL_WINDOW_OPENGL);
 	
+	// Init SDL image.
+	IMG_Init(IMG_INIT_PNG);
+
 	// Create OpenGL context in SDL2.
 	SDL_GLContext sdl_gl_context = SDL_GL_CreateContext(sdl_win);
 	SDL_Event sdl_event;
@@ -268,6 +280,8 @@ int main(int argv, char** argc) {
 	}
 
 	SDL_Quit();
+	IMG_Quit();
+
 	util::log("Shutdown complete!");
 
 	return 0;

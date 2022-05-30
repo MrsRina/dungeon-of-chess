@@ -30,6 +30,7 @@ public:
 	static void start(GLint draw_mode, uint32_t draw_count, uint32_t draw_vertex_count, uint32_t draw_material_count);
 	static void vertex(float x, float y, float z);
 	static void color(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+	static void uv(float u, float v);
 	static void draw(GLfloat* vertex_data, GLfloat* material_data);
 	static void draw();
 	static void fx(shader _shader = fx_manager::default_fx);
