@@ -1,6 +1,6 @@
 # dungeon of sdl2
 
-hello, this is an example of SDL2 and GL3, with fews of features (workable tessellator).
+hello this is a chess game made in SDL2 and GL3, with fews of features (working tessellator).
 
 # build
 
