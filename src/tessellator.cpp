@@ -62,8 +62,11 @@ void tessellator::draw() {
 	tessellator_shader.set_bool("contains_texture", false);
 	
 	if (bind_texture_id != 0) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, bind_texture_id);
+
 		tessellator_shader.set_bool("contains_texture", true);
-		tessellator_shader.set_int("texture_sampler", bind_texture_id);
+		tessellator_shader.set_int("texture_sampler", 0);
 	}
 
 	glEnableVertexAttribArray(attribute_vertex);
@@ -108,8 +111,11 @@ void tessellator::draw(GLfloat* vertex_data, GLfloat* material_data) {
 	tessellator_shader.set_bool("contains_texture", false);
 	
 	if (bind_texture_id != 0) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, bind_texture_id);
+
 		tessellator_shader.set_bool("contains_texture", true);
-		tessellator_shader.set_int("texture_sampler", bind_texture_id);
+		tessellator_shader.set_int("texture_sampler", 0);
 	}
 
 	glEnableVertexAttribArray(attribute_vertex);

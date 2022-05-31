@@ -137,13 +137,16 @@ void fx_manager::context() {
 	mouse_outline_fx.use();
 	mouse_outline_fx.set_matrix(shader_manager::matrix_proj_ortho);
 	mouse_outline_fx.set_float("viewport_h", shader_manager::viewport[3]);
+	mouse_outline_fx.end();
 
 	default_fx.use();
 	default_fx.set_matrix(shader_manager::matrix_proj_ortho);
+	default_fx.end();
 
 	light_specular_fx.use();
 	light_specular_fx.set_matrix(shader_manager::matrix_proj_ortho);
 	light_specular_fx.set_float("viewport_h", shader_manager::viewport[3]);
+	light_specular_fx.end();
 
 	// or shade::end();
 	glUseProgram(0);

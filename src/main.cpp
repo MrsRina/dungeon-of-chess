@@ -6,16 +6,27 @@ uint32_t screen_w = 800;
 uint32_t screen_h = 600;
 
 struct entity_piece {
-	float x, y;
+	float x, y, w, h;
 	float previous_x, previous_y;
 
 	bool alive;
 
 	uint8_t death_master;
-	util::texture texture_id;
+	uint8_t slot_x, slot_y;
+
+	util::texture texture;
+
+	void set_piece_slot(uint8_t x, uint8_t y) {
+		this->slot_x = x;
+		this->slot_y = y;
+	}
 
 	void on_render(float render_ticks) {
+		float width = (this->texture.width / 6);
+		float height = (this->texture.height / 2);
 
+		// Draw the piece.
+		util::render::shape_texture(this->x, this->y, this->w, this->h, width * this->slot_x, height * this->slot_y, width, height, this->texture);
 	};
 };
 
@@ -112,6 +123,7 @@ struct chess {
 		tessellator::fx(fx_manager::light_specular_fx);
 
 		// Set the specular light position.
+		fx_manager::light_specular_fx.use();
 		fx_manager::light_specular_fx.set_float("x", this->x + (this->w / 2));
 		fx_manager::light_specular_fx.set_float("y", this->y + (this->h / 2));
 
@@ -203,6 +215,9 @@ int main(int argv, char** argc) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+	// Set anti-allasing.linda
+	glEnable(GL_MULTISAMPLE);
+
 	// Clock variables.
 	uint64_t previous_ticks = SDL_GetTicks64();
 	uint64_t current_ticks  = SDL_GetTicks64();
@@ -233,6 +248,26 @@ int main(int argv, char** argc) {
 	chess_game.y = (screen_h / 2) - (chess_game.h / 2);
 	chess_game.refresh();
 
+	entity_piece entity;
+	entity.x = 10;
+	entity.y = 10;
+	entity.w = 50;
+	entity.h = 40;
+	entity.set_piece_slot(5, 0);
+	entity.texture = chess_game.chess_symbols_texture;
+
+	entity_piece e;
+	e.x = 10;
+	e.y = 10;
+	e.w = 50;
+	e.h = 40;
+	e.set_piece_slot(4, 0);
+	e.texture = chess_game.chess_symbols_texture;
+
+	std::vector<entity_piece> pieces;
+	pieces.push_back(entity);
+	pieces.push_back(e);
+
 	while (running) {
 		while (SDL_PollEvent(&sdl_event)) {
 			if (sdl_event.type == SDL_QUIT) {
@@ -256,6 +291,10 @@ int main(int argv, char** argc) {
 			// Update and render.
 			on_update(delta);
 			on_render((float) current_ticks);
+
+			for (entity_piece &entites : pieces) {
+				entites.on_render(1.0f);
+			}
 
 			// Count elapsed frames after render.
 			elapsed_frames++;

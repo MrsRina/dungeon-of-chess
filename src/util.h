@@ -5,9 +5,9 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-static float mask_shape_vertex[18];
-static float mask_shape_material_color[24];
-static float mask_shape_material[12];
+static float MASK_SHAPE_VERTEX[18];
+static float MASK_SHAPE_MATERIAL_COLOR[24];
+static float MASK_SHAPE_MATERIAL[12];
 
 struct util {
 	static void log(const std::string &log_str);

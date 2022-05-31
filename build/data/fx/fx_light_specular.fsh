@@ -10,9 +10,8 @@ uniform float x, y, viewport_h;
 
 void main() {
 	if (contains_texture) {
-		vec4 sampler = texture2D(texture_sampler, vec2(varying_material.x, varying_material.y));
-
-		gl_FragColor = sampler;
+		vec4 the_sample = texture2D(texture_sampler, vec2(varying_material.x, varying_material.y));
+		gl_FragColor = the_sample;
 	} else {
 		gl_FragColor = varying_material;
 	}
