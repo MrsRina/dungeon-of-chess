@@ -241,4 +241,34 @@ void util::render::shape_outline(float x, float y, float w, float h, float line_
 	tessellator::draw(mask_shape_vertex, mask_shape_material_color);
 }
 
-void util
+void util::render::shape_texture(float x, float y, float w, float h, float tx, float ty, float tw, float th, util::texture &texture) {
+	uint8_t i = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y + h;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x + w;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	mask_shape_vertex[i++] = x;
+	mask_shape_vertex[i++] = y;
+	mask_shape_vertex[i++] = 0;
+
+	tessellator::start(GL_TRIANGLES, 6, 18, 24);
+	tessellator::texture(texture.id);
+	tessellator::draw(mask_shape_vertex, mask_shape_material_color);
+}

@@ -6,8 +6,7 @@ in vec4 varying_pos;
 uniform sampler2D texture_sampler;
 uniform bool contains_texture;
 
-uniform float mx, my;
-uniform float viewport_h;
+uniform float x, y, viewport_h;
 
 void main() {
 	if (contains_texture) {
@@ -20,8 +19,8 @@ void main() {
 
 	vec2 pos = vec2(gl_FragCoord.x, viewport_h - gl_FragCoord.y);
 
-	float dx = pos.x - mx;
-	float dy = pos.y - my;
+	float dx = pos.x - x;
+	float dy = pos.y - y;
 
 	float diff = 255 - clamp(sqrt(dx * dx + dy * dy), 0, 255);
 	gl_FragColor.a = diff / 255.0f;

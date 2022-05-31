@@ -33,6 +33,7 @@ public:
 class fx_manager {
 public:
 	static shader mouse_outline_fx;
+	static shader light_specular_fx;
 	static shader default_fx;
 
 	static void init();

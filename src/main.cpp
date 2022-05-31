@@ -2,6 +2,9 @@
 #include "util.h"
 #include "tessellator.h"
 
+uint32_t screen_w = 800;
+uint32_t screen_h = 600;
+
 struct entity_piece {
 	float x, y;
 	float previous_x, previous_y;
@@ -106,6 +109,15 @@ struct chess {
 	}
 
 	void on_render(float render_ticks) {
+		tessellator::fx(fx_manager::light_specular_fx);
+
+		// Set the specular light position.
+		fx_manager::light_specular_fx.set_float("x", this->x + (this->w / 2));
+		fx_manager::light_specular_fx.set_float("y", this->y + (this->h / 2));
+
+		util::render::shape(0, 0, screen_w, screen_h, util::color(255, 255, 255, 255));
+		tessellator::fx();
+
 		this->color_white.a = alpha;
 		this->color_black.a = alpha;
 
@@ -123,18 +135,11 @@ struct chess {
 
 			// Render the tiles.
 			util::render::shape(pieces.x, pieces.y, pieces.w, pieces.h, tile_color == color::WHITE ? this->color_white : this->color_black);
-			
-			tessellator::fx(fx_manager::mouse_outline_fx);
-			util::render::shape_outline(pieces.x, pieces.y, pieces.w, pieces.h, 1.0f, util::color(0, 0, 255, 200));
-			tessellator::fx();
-			
 			t++;
 		}
 
 		if (this->over) {
-			tessellator::fx(fx_manager::mouse_outline_fx);
-			util::render::shape_outline(hovered.x, hovered.y, hovered.w, hovered.h, 5.0f, util::color(0, 255, 0, 50));
-			tessellator::fx();
+			util::render::shape_outline(hovered.x, hovered.y, hovered.w, hovered.h, 1.0f, util::color(0, 255, 0, 50));
 		}
 	}
 };
@@ -169,22 +174,10 @@ void on_render(float render_ticks) {
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
 	chess_game.on_render(render_ticks);
-
-	tessellator::fx(fx_manager::mouse_outline_fx);
-	util::render::shape(10, 10, 200, 200, util::color(255, 255, 255, 255));
-	tessellator::fx();
-
-	tessellator::start(GL_LINE_STRIP, 2);
-	tessellator::vertex(200, 200, 0);
-	tessellator::color(255, 255, 255, 255);
-	tessellator::vertex(200, 600, 0);
-	tessellator::color(255, 255, 255, 255);
-	tessellator::draw();
 }
 
 int main(int argv, char** argc) {
 	bool running = true;
-	uint32_t screen_w = 800, screen_h = 600;
 
 	// Init SDL2 and create window.
 	SDL_Init(SDL_INIT_EVERYTHING);

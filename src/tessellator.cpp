@@ -74,7 +74,7 @@ void tessellator::draw() {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * concurrent_vertex_data.size(), &concurrent_vertex_data[0], GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_material);
-	glVertexAttribPointer(attribute_material, bind_texture != 0 ? 2 : 4, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+	glVertexAttribPointer(attribute_material, bind_texture_id != 0 ? 2 : 4, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * concurrent_material_data.size(), &concurrent_material_data[0], GL_DYNAMIC_DRAW);
 
 	glDrawArrays(draw_mode, 0, draw_count);

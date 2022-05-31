@@ -113,12 +113,17 @@ bool shader_manager::compile_shader(shader &_shader, const char* vertex_shader_p
 	return _shader.compiled;
 }
 
-shader fx_manager::mouse_outline_fx = shader();
-shader fx_manager::default_fx       = shader();
+shader fx_manager::mouse_outline_fx  = shader();
+shader fx_manager::light_specular_fx = shader();
+shader fx_manager::default_fx        = shader();
 
 void fx_manager::init() {
 	if (!shader_manager::compile_shader(mouse_outline_fx, "data/fx/fx_mouse_outline.vsh", "data/fx/fx_mouse_outline.fsh")) {
 		util::log("Could not load 'mouse outline' fx.");
+	}
+
+	if (!shader_manager::compile_shader(light_specular_fx, "data/fx/fx_light_specular.vsh", "data/fx/fx_light_specular.fsh")) {
+		util::log("Could not load 'light specular' fx.");
 	}
 
 	if (!shader_manager::compile_shader(default_fx, "data/fx/fx_default.vsh", "data/fx/fx_default.fsh")) {
@@ -131,11 +136,15 @@ void fx_manager::init() {
 void fx_manager::context() {
 	mouse_outline_fx.use();
 	mouse_outline_fx.set_matrix(shader_manager::matrix_proj_ortho);
-	mouse_outline_fx.set_float("w", shader_manager::viewport[2]);
-	mouse_outline_fx.set_float("h", shader_manager::viewport[3]);
-	mouse_outline_fx.end();
+	mouse_outline_fx.set_float("viewport_h", shader_manager::viewport[3]);
 
 	default_fx.use();
 	default_fx.set_matrix(shader_manager::matrix_proj_ortho);
-	default_fx.end();
+
+	light_specular_fx.use();
+	light_specular_fx.set_matrix(shader_manager::matrix_proj_ortho);
+	light_specular_fx.set_float("viewport_h", shader_manager::viewport[3]);
+
+	// or shade::end();
+	glUseProgram(0);
 }
