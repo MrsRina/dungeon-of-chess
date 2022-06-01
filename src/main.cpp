@@ -26,27 +26,35 @@ struct entity_piece {
 	bool alive;
 	uint8_t death_master;
 	uint8_t color_factory;
+	uint8_t pos;
 
 	piece_data piece_slot;
 	util::texture texture;
 
-	entity_piece(float pos_x, float pos_y, float metrics_w, float metrics_h, uint8_t color, piece_data &_piece_data, &util::texture _texture) {
+	entity_piece() {}
+	entity_piece(float pos_x, float pos_y, float metrics_w, float metrics_h, uint8_t color, piece_data &_piece_data, util::texture &_texture) {
 		this->x = pos_x;
 		this->y = pos_y;
 		this->w = metrics_w;
 		this->h = metrics_h;
-		this->piece_slot = piece_data;
+		this->piece_slot = _piece_data;
 		this->texture = _texture;
 	}
 
+	void set_color(uint8_t color) {
+		this->color_factory = color;
+		this->piece_slot.color = color;
+	}
+
 	void set(piece_data &_piece_data) {
-		this->piece_slot = piece_data;
+		this->piece_slot = _piece_data;
+		this->alive = true;
 	}
 
 	void on_render(float render_ticks) {
 		// Draw the piece.
 		util::render::shape_texture(this->x, this->y, this->w, this->h, this->piece_slot.x, this->piece_slot.y, this->piece_slot.w, this->piece_slot.h, this->texture);
-	};
+	}
 };
 
 struct chess {
@@ -102,13 +110,25 @@ struct chess {
 		static chess::color get_color(entity_piece &entity) {
 			return entity.color_factory == 1 ? chess::color::WHITE : chess::color::BLACK;
 		}
+
+		static void set_color(entity_piece &entity, chess::color piece_color) {
+			float height = chess::texture.height / 2;
+			entity.piece_slot.y = piece_color == chess::color::WHITE ? height : 0.0f;
+		}
 	};
 
 	struct matrix {
+		static void from(float x, float y, uint8_t &row, uint8_t &col) {
+			row = (uint8_t) (x / chess::square_size);
+			col = (uint8_t) (y / chess::square_size);
+
+			row = util::math::clampi(row, 0, 8); 
+			col = util::math::clampi(col, 0, 8);
+		}
+
 		static void move(uint8_t &not_matrix_pos, uint8_t velocity) {
-			if (not_matrix_pos + velocity < 8) {
-				not_matrix_pos += velocity;
-			}
+			not_matrix_pos += velocity;
+			not_matrix_pos = util::math::clampi(not_matrix_pos, 0, 8);
 		}
 
 		static bool get(piece_data &_piece_data, uint8_t pos) {
@@ -116,17 +136,21 @@ struct chess {
 				return false;
 			}
 
-			_piece_data = util::map[pos];
+			_piece_data = chess::map[pos];
 
-			if (_piece_data == NULL) {
-				return false;
+			for (entity_piece &entity : chess::loaded_entity_list) {
+				if (entity.pos == pos) {
+					util::log("Found ()p " + std::to_string(pos));
+					_piece_data = entity.piece_slot;
+					break;
+				}
 			}
 
 			return true;
 		}
 
-		static uint8_t* possible(uint8_t type, uint8_t color, uint8_t row, uint8_t col) {
-			bool white = color;
+		static void possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col) {
+			bool white = ((bool) color_factory);
 			bool real = false;
 
 			piece_data concurrent_piece;
@@ -135,10 +159,6 @@ struct chess {
 			uint8_t next_row = row;
 			uint8_t next_col = col;
 
-			// Stack of pos possible in this calc.
-			uint8_t i;
-			uint8_t[64] pos_list;
-
 			// Velocity based on side positions.
 			int8_t v_white = chess::white_dock == chess::TOP ?  1 : -1;
 			int8_t v_black = chess::white_dock == chess::TOP ? -1 :  1;
@@ -146,23 +166,25 @@ struct chess {
 			// We have a loop with 256 ticks.
 			// 64 * 4 = 256
 			for (uint8_t ticks = 0; ticks < 256; ticks++) {
-				white = chess::render::get_color();
-
 				if (type == chess::piece::PAWN) {
 					// Move the piece to front (based in velocity).
 					chess::matrix::move(next_col, white ? v_white : v_black);
+					util::log(std::to_string(next_col));
 
 					// If we can move front and there is not piece there, yes we add it in pos list.
 					if (chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY) {
-						pos_list[i++] = pos;
+						pos_list.push_back(pos);
 					}
+
+					util::log(std::to_string(concurrent_piece.type));
+					break;
 
 					// Move right.
 					chess::matrix::move(next_row, 1);
 
 					// If some piece is in up-right to piece, we can kill so add in pos list.
 					if (chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color == (white ? chess::color::BLACK : chess::color::WHITE)) {
-						pos_list[i++] = pos;
+						pos_list.push_back(pos);
 					}
 
 					// Now move left (considering it was right, so double move to left).	
@@ -170,39 +192,47 @@ struct chess {
 
 					// Samething but now for up-left
 					if (chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color == (white ? chess::color::BLACK : chess::color::WHITE)) {
-						stack_pos[i++] = pos;
+						pos_list.push_back(pos);
 					}
+
+					util::log("Collection end. Color (white): " + std::to_string(white));
+
+					// End.
+					break;
+				} else {
+					break;
 				}
 			}
-
-			return pos_list;
 		}
 
 		static uint8_t find(uint8_t row, uint8_t col) {
 			uint8_t last_jump = 0;
+			uint8_t iterator = 0;
 
 			uint8_t concurrent_jump = 0;
 			uint8_t concurrent_rows = 0;
 			uint8_t concurrent_cols = 0;
 
-			for (uint8_t jumps = 1; jumps < 64; jumps++) {
-				if (concurrent_rows == row && concurrent_cols = col) {
-					return jumps;
+			// + 1 (the inital index is 0 so... 0..63 = 64; but 1..63 = 63; so 1..64 = 64);
+			for (uint8_t jumps = 1; jumps < 64 + 1; jumps++) {
+				if (concurrent_rows == row && concurrent_cols == col) {
+					return iterator;
 				}
 
-				concurrent_jump = i - last_jump;
+				iterator++;
+				concurrent_jump = jumps - last_jump;
 
-				if (concurrent_jump == 7) {
+				if (concurrent_jump == 8) {
 					last_jump = jumps;
 
-					if (concurrent_cols != 7) {
+					if (concurrent_cols != 8) {
 						concurrent_cols++;
 					}
 
 					concurrent_rows = 0;
+				} else {
+					concurrent_rows++;
 				}
-
-				concurrent_rows++;
 			}
 
 			return chess::OUT_RANGE;
@@ -211,24 +241,29 @@ struct chess {
 
 	static piece_data map[64];
 	static std::vector<entity_piece> loaded_entity_list;
-	
+	static float square_size;
+
+	std::vector<uint8_t> possible;
+
 	piece_data hovered;
+	piece_data start, end;
+
+	uint8_t matrix_pos[4];
+	uint8_t focused;
+
+	bool start_pos, end_pos;
 
 	bool over;
 	bool gaming;
+	bool dragging;
 
-	float x, y, w, h, square_size;
+	float x, y, w, h, dx, dy;
 	uint8_t alpha;
 	
 	static util::texture texture;
 	static uint8_t white_dock; 
 
 	util::color color_white = util::color(255, 255, 255, 255), color_black = util::color(0, 0, 0, 255);
-
-	static void set_color(entity_piece &entity, chess::color piece_color) {
-		float height = texture.height / 2;
-		entity.piece_slot.y = piece_color == chess::color::WHITE ? height : 0.0f;
-	}
 
 	static void set_piece(entity_piece &entity, uint8_t type) {
 		if (type == chess::piece::PAWN) {
@@ -241,8 +276,8 @@ struct chess {
 			entity.set(chess::render::bishop);
 		} else if (type == chess::piece::KING) {
 			entity.set(chess::render::king);
-		} else if (type == chesS::piece::QUEEN) {
-			entity.set(type == chess::render::queen);
+		} else if (type == chess::piece::QUEEN) {
+			entity.set(chess::render::queen);
 		}
 	}
 
@@ -250,33 +285,24 @@ struct chess {
 		uint8_t index = chess::OUT_RANGE;
 
 		for (piece_data &tiles : chess::map) {
-
 		}
 
 		return index;
 	}
 
-	static void reset_piece_place(entity_piece &entity) {
-		chess::color color = chess::render::get_color(entity);
-		chess::piece type = entity.piece_slot.type;
+	static void move(entity_piece &entity, uint8_t pos) {
+		piece_data _piece_data;
 
-		if (type == chess::piece::PAWN) {
-			entity.set(chess::render::pawn);
-		} else if (type == chess::piece::TOWER) {
-			entity.set(chess::render::tower);
-		} else if (type == chess::piece::HORSE) {
-			entity.set(chess::render::horse);
-		} else if (type == chess::piece::BISHOP) {
-			entity.set(chess::render::bishop);
-		} else if (type == chess::piece::KING) {
-			entity.set(chess::render::king);
-		} else if (type == chesS::piece::QUEEN) {
-			entity.set(type == chess::render::queen);
-		}
+		// Set to "air" the old slot.
+		_piece_data = chess::map[entity.pos];
+		_piece_data.type = chess::piece::EMPTY;
+		chess::map[entity.pos] = _piece_data;
 
-		if (color == chess::color::WHITE) {
-
-		}
+		// Set the new slot.
+		_piece_data = chess::map[pos];
+		_piece_data.type = entity.piece_slot.type;
+		chess::map[pos] = _piece_data;		
+		entity.pos = pos;
 	}
 
 	void init() {
@@ -292,21 +318,113 @@ struct chess {
 	void new_game() {
 		this->gaming = true;
 		chess::loaded_entity_list.clear();
+		uint8_t not_infantry[8] = {piece::TOWER, piece::HORSE, piece::BISHOP, piece::KING, piece::QUEEN, piece::BISHOP, piece::HORSE, piece::TOWER};
 
-		uint8_t not_infantry = {piece::TOWER, piece::HORSE, piece::BISHOP, piece::KING, piece::QUEEN, pience::BISHOP, piece::HORSE, bishop::TOWER};
-		
-		uint8_t pos_x = chess::white_dock == chess::TOP ? 0 : 64;
-		uint8_t pos_y = chess::white_dock == chess::TOP ? 0 : 64;
+		bool pawn_sector = true;
+		uint8_t ordened_count = 0;
 
-		loaded_entity_list.push_back(entity_piece(this->x + (i++ * this->square_size),
-												  this->y + (i * this->square_size),
-												  this->square_size, this->square_size,
-												  chess::color::WHITE, chess::piece::pawn));
+		for (uint8_t i = 0; i < 16; i++) {
+			entity_piece piece_white, piece_black;
 
-		loaded_entity_list.push_back(entity_piece(this->x + (i++ * this->square_size),
-												  this->y + (i * this->square_size),
-												  this->square_size, this->square_size,
-												  chess::color::WHITE, chess::piece::pawn));
+			piece_white.color_factory = 1;
+			piece_black.color_factory = 0;
+
+			piece_white.piece_slot.color = 1;
+			piece_black.piece_slot.color = 0;
+
+			piece_white.w = chess::square_size;
+			piece_white.h = chess::square_size;
+
+			piece_black.w = chess::square_size;
+			piece_black.h = chess::square_size;
+
+			if (pawn_sector) {
+				piece_white.set(chess::render::pawn);
+				piece_black.set(chess::render::pawn);
+
+				piece_white.x = this->x + (chess::square_size * ordened_count);
+				piece_black.x = this->x + (chess::square_size * ordened_count);
+
+				piece_white.texture = chess::texture;
+				piece_black.texture = chess::texture;
+
+				// Set entity color.
+				chess::render::set_color(piece_white, chess::color::WHITE);
+				chess::render::set_color(piece_black, chess::color::BLACK);
+
+				if (chess::white_dock == chess::TOP) {
+					piece_white.y = this->y + chess::square_size;
+					piece_black.y = this->y + (chess::square_size) * 6;
+
+					// Set in map.
+					uint8_t pos = chess::matrix::find(ordened_count, 1);
+					chess::move(piece_white, pos);
+
+					pos = chess::matrix::find(ordened_count, 6);
+					chess::move(piece_black, pos);
+				} else {
+					piece_white.y = this->y + (chess::square_size) * 6;
+					piece_black.y = this->y + chess::square_size;
+
+					// Set in map.
+					uint8_t pos = chess::matrix::find(ordened_count, 6);
+					chess::move(piece_white, pos);
+
+					pos = chess::matrix::find(ordened_count, 1);
+					chess::move(piece_black, pos);
+				}
+
+				if (ordened_count == 7) {
+					pawn_sector = false;
+					ordened_count = 0;
+				} else {
+					ordened_count++;
+				}
+			} else {
+				uint8_t o = not_infantry[ordened_count];
+
+				chess::set_piece(piece_white, o);
+				chess::set_piece(piece_black, o);
+
+				piece_white.x = this->x + (chess::square_size * ordened_count);
+				piece_black.x = this->x + (chess::square_size * ordened_count);
+
+				piece_white.texture = chess::texture;
+				piece_black.texture = chess::texture;
+
+				// Set entity color.
+				chess::render::set_color(piece_white, chess::color::WHITE);
+				chess::render::set_color(piece_black, chess::color::BLACK);
+
+				if (chess::white_dock == chess::TOP) {
+					piece_white.y = this->y;
+					piece_black.y = this->y + (chess::square_size) * 7;
+
+					// Set in map.
+					uint8_t pos = chess::matrix::find(ordened_count, 0);
+					chess::move(piece_white, pos);
+
+					pos = chess::matrix::find(ordened_count, 7);
+					chess::move(piece_black, pos);
+				} else {
+					piece_white.y = this->y + (chess::square_size) * 7;
+					piece_black.y = this->y;
+
+					// Set in map.
+					uint8_t pos = chess::matrix::find(ordened_count, 7);
+					chess::move(piece_white, pos);
+
+					pos = chess::matrix::find(ordened_count, 0);
+					chess::move(piece_black, pos);
+				}
+
+				ordened_count++;
+			}
+			
+			// Add at loaded render list.
+			chess::loaded_entity_list.push_back(piece_white);
+			chess::loaded_entity_list.push_back(piece_black);
+		}
 	}
 
 	void end_game() {
@@ -314,44 +432,93 @@ struct chess {
 	}
 
 	void refresh() {
-		this->w = 8 * this->square_size;
-		this->h = 8 * this->square_size;
+		this->w = 8 * chess::square_size;
+		this->h = 8 * chess::square_size;
 
+		// Iterator for map stuff.
 		uint8_t iterator = 0;
 
-		// s = sync.
-		float sx = this->x, sy = this->y;
+		// The for loop variables does not affect nothing.
+		uint8_t last_jump = 0;
 
-		for (uint8_t i = 0; i < 8; i++) {
-			for (uint8_t j = 0; j < 8; j++) {
-				piece_data pd;
+		uint8_t concurrent_jump = 0;
+		uint8_t concurrent_rows = 0;
+		uint8_t concurrent_cols = 0;
 
-				pd.x = sx;
-				pd.y = sy;
+		// + 1 (the inital index is 0 so... 0..63 = 64; but 1..63 = 63; so 1..64 = 64);
+		for (uint8_t jumps = 1; jumps < 64 + 1; jumps++) {
+			piece_data pd;
 
-				pd.w = square_size;
-				pd.h = square_size;
+			pd.x = this->x + (concurrent_rows * chess::square_size);
+			pd.y = this->y + (concurrent_cols * chess::square_size);
+
+			pd.w = square_size;
+			pd.h = square_size;
+			pd.type = chess::piece::EMPTY;
  
-				chess::map[iterator++] = pd;
-				sx += this->square_size;
-			}
+			chess::map[iterator++] = pd;
+			concurrent_jump = jumps - last_jump;
 
-			sx = this->x;
-			sy += this->square_size;
+			if (concurrent_jump == 8) {
+				last_jump = jumps;
+
+				if (concurrent_cols != 8) {
+					concurrent_cols++;
+				}
+
+				concurrent_rows = 0;
+			} else {
+				concurrent_rows++;
+			}
 		}
 	}
 
 	void on_event(SDL_Event &sdl_event) {
 		switch (sdl_event.type) {
+			case SDL_MOUSEBUTTONDOWN: {
+				// Clean before use.
+				this->possible.clear();
+
+				float x = sdl_event.motion.x;
+				float y = sdl_event.motion.y;
+
+				this->over = (x > this->x && y > this->y && x < this->x + this->w && y < this->y + this->h);
+
+				if (!this->over) {
+					break;
+				}
+
+				this->focused = chess::OUT_RANGE;
+				entity_piece entity;
+
+				for (uint8_t i = 0; i < chess::loaded_entity_list.size(); i++) {
+					entity = chess::loaded_entity_list.at(i);
+
+					if (x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h) {
+						this->start.x = entity.x;
+						this->start.y = entity.y;
+						this->start.w = entity.w;
+						this->start.h = entity.h;
+
+						this->start_pos = true;
+						this->end_pos = false;
+
+						chess::matrix::from(entity.x - this->y, entity.y - this->y, this->matrix_pos[0], this->matrix_pos[1]);
+						chess::matrix::possible(this->possible, entity.piece_slot.type, entity.color_factory, this->matrix_pos[0], this->matrix_pos[1]);
+						break;
+					}
+				}
+
+				break;
+			}
+
 			case SDL_MOUSEMOTION: {
 				float x = sdl_event.motion.x;
 				float y = sdl_event.motion.y;
 
-				this->over = false;
+				this->over = (x > this->x && y > this->y && x < this->x + this->w && y < this->y + this->h);
 
-				if (x > this->x && y > this->y && x < this->x + this->w && y < this->y + this->h) {
-					this->over = true;
-
+				if (this->over) {
 					for (piece_data &pieces : chess::map) {
 						if (x > pieces.x && y > pieces.y && x < pieces.x + pieces.w && y < pieces.y + pieces.h) {
 							this->hovered = pieces;
@@ -362,10 +529,18 @@ struct chess {
 
 				break;
 			}
+
+			case SDL_MOUSEBUTTONUP: {
+				break;
+			}
 		}
 	}
 
 	void on_render(float render_ticks) {
+		if (!this->gaming) {
+			return;
+		}
+
 		tessellator::fx(fx_manager::light_specular_fx);
 
 		// Set the specular light position.
@@ -382,7 +557,7 @@ struct chess {
 		color tile_color = color::WHITE;
 		uint8_t t = 0;
 
-		for (piece_data &pieces : chess::map) {
+		for (piece_data &places : chess::map) {
 			// Swap color.
 			tile_color = tile_color == color::WHITE ? color::BLACK : color::WHITE;
 
@@ -392,18 +567,39 @@ struct chess {
 			}
 
 			// Render the tiles.
-			util::render::shape(pieces.x, pieces.y, pieces.w, pieces.h, tile_color == color::WHITE ? this->color_white : this->color_black);
+			util::render::shape(places.x, places.y, places.w, places.h, tile_color == color::WHITE ? this->color_white : this->color_black);
 			t++;
 		}
 
+		if (this->start_pos) {
+			piece_data places;
+
+			// Draw each possible place from to piece selected.
+			for (uint8_t index_pos : this->possible) {
+				places = chess::map[index_pos];
+
+				// Render the end pos.
+				util::render::shape(places.x, places.y, places.w, places.h, util::color(255, 0, 0, 50));
+			}
+		}
+
+		for (entity_piece &entity : chess::loaded_entity_list) {
+			entity.on_render(1.0f);
+		}
+
 		if (this->over) {
-			util::render::shape_outline(hovered.x, hovered.y, hovered.w, hovered.h, 1.0f, util::color(0, 255, 0, 50));
+			util::render::shape_outline(this->hovered.x, this->hovered.y, this->hovered.w, this->hovered.h, 1.0f, util::color(0, 255, 0, 50));
+		}
+
+		if (this->dragging) {
+			util::render::shape(this->hovered.x, this->hovered.y, this->hovered.w, this->hovered.h, util::color(0, 0, 255, 50));
 		}
 	}
 };
 
 util::texture chess::texture = util::texture();
 uint8_t chess::white_dock = chess::TOP;
+float chess::square_size = 30;
 
 piece_data chess::render::queen  = piece_data();
 piece_data chess::render::bishop = piece_data();
@@ -498,8 +694,8 @@ int main(int argv, char** argc) {
 	tessellator::init();
 
 	// Init chess stuff.
-	chess_game.square_size = 30;
 	chess_game.alpha = 200;
+	chess::square_size = 60;
 	chess_game.init();
 	chess::render::init();
 
@@ -507,6 +703,7 @@ int main(int argv, char** argc) {
 	chess_game.x = (screen_w / 2) - (chess_game.w / 2);
 	chess_game.y = (screen_h / 2) - (chess_game.h / 2);
 	chess_game.refresh();
+	chess_game.new_game();
 
 	while (running) {
 		while (SDL_PollEvent(&sdl_event)) {

@@ -136,6 +136,14 @@ void util::math::ortho2d(float* mat, float left, float right, float bottom, floa
     *mat++ = (1.0f);
 }
 
+int32_t util::math::clampi(int32_t val, int32_t min, int32_t max) {
+	return val < min ? min : (max > max ? max : val);
+}
+
+float util::math::clampf(float val, float min, float max) {
+	return val < min ? min : (val > max ? max : val);
+}
+
 void util::render::shape(float x, float y, float w, float h, util::color color) {
 	uint8_t i = 0;
 
