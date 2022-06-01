@@ -13,14 +13,32 @@ struct util {
 	static void log(const std::string &log_str);
 
 	struct color {
+		enum format {
+			RGBA, ALPHA, EMPTY
+		};
+
+		format phase;
 		uint8_t r, g, b, a;
+
+		color() {
+			this->phase = format::EMPTY;
+		}
 
 		color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) {
 			this->r = red;
 			this->g = green;
 			this->b = blue;
 			this->a = alpha;
+			this->phase = format::RGBA;
 		}
+
+		color(uint8_t alpha) {
+			this->a = alpha;
+			this->phase = format::ALPHA;
+		}
+
+		void set(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+		void set(uint8_t alpha);
 
 		float redf();
 		float greenf();
@@ -52,7 +70,7 @@ struct util {
 	struct render {
 		static void shape(float x, float y, float w, float h, util::color color);
 		static void shape_outline(float x, float y, float w, float h, float line_thickness, util::color color);
-		static void shape_texture(float x, float y, float w, float h, float tx, float ty, float tw, float th, util::texture &texture);
+		static void shape_texture(float x, float y, float w, float h, float tx, float ty, float tw, float th, util::texture &texture, util::color color = util::color());
 	};
 };
 

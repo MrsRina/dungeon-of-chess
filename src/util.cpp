@@ -1,6 +1,30 @@
 #include "util.h"
 #include "tessellator.h"
 
+void util::color::set(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
+	this->r = red;
+	this->g = green;
+	this->b = blue;
+	this->a = alpha;
+	this->phase = color::format::RGBA;
+}
+
+void util::color::set(uint8_t alpha) {
+	this->a = alpha;
+	this->phase = color::format::ALPHA;
+
+	switch (this->phase) {
+		case util::color::format::RGBA: {
+			break;
+		}
+
+		case util::color::format::EMPTY: {
+			this->phase = color::format::ALPHA;
+			break;
+		}
+	}
+}
+
 float util::color::redf() {
 	return (float) this->r / 255.0f;
 }
@@ -241,7 +265,7 @@ void util::render::shape_outline(float x, float y, float w, float h, float line_
 	tessellator::draw(MASK_SHAPE_VERTEX, MASK_SHAPE_MATERIAL_COLOR);
 }
 
-void util::render::shape_texture(float x, float y, float w, float h, float tx, float ty, float tw, float th, util::texture &texture) {
+void util::render::shape_texture(float x, float y, float w, float h, float tx, float ty, float tw, float th, util::texture &texture, util::color color) {
 	uint8_t i = 0;
 
 	MASK_SHAPE_VERTEX[i++] = x;
@@ -294,5 +318,19 @@ void util::render::shape_texture(float x, float y, float w, float h, float tx, f
 	tessellator::start(GL_TRIANGLES, 6, 18, 12);
 	tessellator::fx();
 	tessellator::texture(texture.id);
+
+	switch (color.phase) {
+		case util::color::format::ALPHA: {
+			tessellator::color(color.a);
+			break;
+		}
+
+		case util::color::format::RGBA: {
+			tessellator::color(color);
+			break;
+		}
+	}
+	
+
 	tessellator::draw(MASK_SHAPE_VERTEX, MASK_SHAPE_MATERIAL);
 }
