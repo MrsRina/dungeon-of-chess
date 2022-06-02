@@ -71,7 +71,8 @@ int main(int argv, char** argc) {
 	// Clock variables.
 	uint64_t previous_ticks = SDL_GetTicks64();
 	uint64_t current_ticks  = SDL_GetTicks64();
-	uint64_t interval       = 1000 / 60;
+	uint64_t the_fps_config = 60;
+	uint64_t interval       = 1000 / the_fps_config;
 	uint64_t delta          = 0;
 	uint32_t elapsed_frames = 0;
 	uint32_t fps            = 0;
@@ -122,7 +123,7 @@ int main(int argv, char** argc) {
 
 			// Update and render.
 			on_update(delta);
-			on_render(1.0f / (float) current_ticks);
+			on_render((float) current_ticks / the_fps_config);
 
 			// Count elapsed frames after render.
 			elapsed_frames++;
