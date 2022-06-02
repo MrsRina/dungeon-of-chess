@@ -44,11 +44,7 @@ void main() {
 	float alpha_diff = 255 - clamp(sqrt(pos.x * pos.x + pos.y * pos.y) * scale, 0, 255);
 
 	// Set new fragment alpha.
-	if (texture_status) {
-		fragment.a = (fragment.a - (1.0f - (alpha_diff / 255.0f)));
-	} else {
-		fragment.a = (alpha_diff / 255.0f);
-	}
+	fragment.a = (fragment.a - (1.0f - (alpha_diff / 255.0f)));
 
 	// Set fragment color.
 	gl_FragColor = fragment;

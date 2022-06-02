@@ -188,14 +188,16 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		/* Start of tower path finder. */
 		chess::matrix::get(concurrent_piece, chess::matrix::find(next_row, next_col));
 
+		// Concurrent iterations from difference and stages.
 		uint8_t concurrent_stage = 0;
 		uint8_t concurrent_i = 0;
 		uint8_t previous_i = 0;
 
 		// 1..33 = 32
-		for (uint8_t i= 1; i < 65; i++) {
+		for (uint8_t i = 0; i < 32; i++) {
 			concurrent_i = i - previous_i;
 
+			// Move with base in stage (direction)
 			if (concurrent_stage == 0) {
 				chess::matrix::move(next_col, 1);
 			} else if (concurrent_stage == 1) {
@@ -206,20 +208,24 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 				chess::matrix::move(next_row, -1);
 			}
 
+			// Verify if contains an empty slot or if is an enemy.
 			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
 			
 			if (real) {
 				pos_list.push_back(pos);
 
+				// If is an enemy stop this stage and go next.
 				if (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory) {
 					real = false;
 				}
 			}
 
+			// For move the stages.
 			if (concurrent_i == 8 || !real) {
-				concurrent_i = i;
 				concurrent_stage++;
+				previous_i = i;
 
+				// Break at four stage.
 				if (concurrent_stage > 4) {
 					break;
 				}
@@ -671,26 +677,39 @@ void chess::on_render(float render_ticks) {
 	}
 
 	if (this->start_pos) {
+		/* Start of rendering start pos. */
+		fx_manager::light_specular_fx.use();
+		fx_manager::light_specular_fx.set_float("x", this->start.x + (this->start.w / 2));
+		fx_manager::light_specular_fx.set_float("y", this->start.y + (this->start.h / 2));
+
+		tessellator::fx(fx_manager::light_specular_fx);
+		util::render::shape(this->start.x, this->start.y, this->start.w, this->start.h, util::color(0, 0, 255, 100));
+		tessellator::fx();
+		/* End of rendering start pos. */
+
 		piece_data places;
 
 		// Draw each possible place from to piece selected.
 		for (uint8_t index_pos : this->possible) {
 			places = chess::map[index_pos];
 
-			// Render the end pos.
-			util::render::shape(places.x, places.y, places.w, places.h, util::color(255, 0, 0, 50));
-		}
-	}
+			/* Start of rendering places. */
+			fx_manager::light_specular_fx.use();
+			fx_manager::light_specular_fx.set_float("x", places.x + (places.w / 2));
+			fx_manager::light_specular_fx.set_float("y", places.y + (places.h / 2));
 
-	for (entity_piece &entity : chess::loaded_entity_list) {
-		entity.on_render(render_ticks);
+			tessellator::fx(fx_manager::light_specular_fx);
+			util::render::shape(places.x, places.y, places.w, places.h, util::color(255, 0, 0, 50));
+			tessellator::fx();
+			/* End of rendering places. */
+		}
 	}
 
 	if (this->over) {
 		util::render::shape_outline(this->hovered.x, this->hovered.y, this->hovered.w, this->hovered.h, 1.0f, util::color(0, 255, 0, 50));
 	}
 
-	if (this->dragging) {
-		util::render::shape(this->hovered.x, this->hovered.y, this->hovered.w, this->hovered.h, util::color(0, 0, 255, 50));
+	for (entity_piece &entity : chess::loaded_entity_list) {
+		entity.on_render(render_ticks);
 	}
 }
