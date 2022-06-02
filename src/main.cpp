@@ -10,6 +10,7 @@ struct piece_data {
 
 	uint8_t type;
 	uint8_t color;
+	uint8_t moved;
 
 	void set(float rect_x, float rect_y, float rect_w, float rect_h) {
 		this->x = rect_x;
@@ -53,9 +54,7 @@ struct entity_piece {
 
 	void on_render(float render_ticks) {
 		// Draw the piece.
-		tessellator::fx(fx_manager::mouse_outline_fx);
 		util::render::shape_texture(this->x, this->y, this->w, this->h, this->piece_slot.x, this->piece_slot.y, this->piece_slot.w, this->piece_slot.h, this->texture);
-		tessellator::fx();
 	}
 };
 
@@ -125,7 +124,7 @@ struct chess {
 			col = (uint8_t) (y / chess::square_size);
 
 			row = util::math::clampi(row, 0, 8); 
-			col = util::math::clampi(col, 0, 8);
+			col = util::math::clampi(col, 0, 8); 
 		}
 
 		static void move(uint8_t &not_matrix_pos, uint8_t velocity) {
@@ -142,7 +141,6 @@ struct chess {
 
 			for (entity_piece &entity : chess::loaded_entity_list) {
 				if (entity.pos == pos) {
-					util::log("Found ()p " + std::to_string(pos));
 					_piece_data = entity.piece_slot;
 					break;
 				}
@@ -169,16 +167,27 @@ struct chess {
 			// 64 * 4 = 256
 			for (uint8_t ticks = 0; ticks < 256; ticks++) {
 				if (type == chess::piece::PAWN) {
-					// Move the piece to front (based in velocity).
+					chess::matrix::get(concurrent_piece, chess::matrix::find(next_row, next_col));
 					chess::matrix::move(next_col, white ? v_white : v_black);
-					util::log(std::to_string(next_col));
 
-					// If we can move front and there is not piece there, yes we add it in pos list.
-					if (chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY) {
-						pos_list.push_back(pos);
+					// Verify if is moved for first time.
+					if (concurrent_piece.type == chess::piece::PAWN && !concurrent_piece.moved) {
+						real = chess::matrix::get(concurrent_piece, chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY;
+						chess::matrix::move(next_col, white ? v_white : v_black);
+
+						if (real && real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY) {
+							pos_list.push_back(pos);
+						}
+					
+						// Reset and move to front.
+						next_col = col;
+						chess::matrix::move(next_col, white ? v_white : v_black);
 					}
 
-					util::log(std::to_string(concurrent_piece.type));
+					// If we can move front and there is not piece there, yes we add it in pos list.
+					if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY) {
+						pos_list.push_back(pos);
+					}
 
 					// Move right.
 					chess::matrix::move(next_row, 1);
@@ -195,8 +204,6 @@ struct chess {
 					if (chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color == (white ? chess::color::BLACK : chess::color::WHITE)) {
 						pos_list.push_back(pos);
 					}
-
-					util::log("Collection end. Color (white): " + std::to_string(white));
 
 					// End.
 					break;
@@ -504,7 +511,7 @@ struct chess {
 						this->start_pos = true;
 						this->end_pos = false;
 
-						chess::matrix::from(entity.x - this->y, entity.y - this->y, this->matrix_pos[0], this->matrix_pos[1]);
+						chess::matrix::from(entity.x - this->x, entity.y - this->y, this->matrix_pos[0], this->matrix_pos[1]);
 						chess::matrix::possible(this->possible, entity.piece_slot.type, entity.color_factory, this->matrix_pos[0], this->matrix_pos[1]);
 						break;
 					}
