@@ -144,6 +144,10 @@ float util::math::clampf(float val, float min, float max) {
 	return val < min ? min : (val > max ? max : val);
 }
 
+float util::math::lerpf(float a, float b, float t) {
+	return a + (b - a) * t;
+}
+
 void util::render::shape(float x, float y, float w, float h, util::color color) {
 	uint8_t i = 0;
 
@@ -338,6 +342,5 @@ void util::render::shape_texture(float x, float y, float w, float h, float tx, f
 		}
 	}
 	
-
 	tessellator::draw(MASK_SHAPE_VERTEX, MASK_SHAPE_MATERIAL);
 }

@@ -67,6 +67,7 @@ struct util {
 		static void ortho2d(float* mat, float left, float right, float bottom, float top);
 		static int32_t clampi(int32_t val, int32_t min, int32_t max);
 		static float clampf(float val, float min, float max);
+		static float lerpf(float a, float b, float t);
 	};
 
 	struct render {
