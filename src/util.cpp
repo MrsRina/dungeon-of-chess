@@ -324,7 +324,6 @@ void util::render::shape_texture(float x, float y, float w, float h, float tx, f
     MASK_SHAPE_MATERIAL[i++] = s;
 
 	tessellator::start(GL_TRIANGLES, 6, 18, 12);
-	tessellator::fx();
 	tessellator::texture(texture.id);
 
 	switch (color.phase) {

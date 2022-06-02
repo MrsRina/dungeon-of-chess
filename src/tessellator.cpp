@@ -84,7 +84,7 @@ void tessellator::draw() {
 	attribute_material = glGetAttribLocation(tessellator_shader.program, "attribute_material");
 
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
 	tessellator_shader.set_bool("texture_status", false);
 	tessellator_shader.set_bool("texture_color_filter", texture_color_filter);

@@ -53,7 +53,9 @@ struct entity_piece {
 
 	void on_render(float render_ticks) {
 		// Draw the piece.
+		tessellator::fx(fx_manager::mouse_outline_fx);
 		util::render::shape_texture(this->x, this->y, this->w, this->h, this->piece_slot.x, this->piece_slot.y, this->piece_slot.w, this->piece_slot.h, this->texture);
+		tessellator::fx();
 	}
 };
 
@@ -177,7 +179,6 @@ struct chess {
 					}
 
 					util::log(std::to_string(concurrent_piece.type));
-					break;
 
 					// Move right.
 					chess::matrix::move(next_row, 1);
@@ -547,8 +548,9 @@ struct chess {
 		fx_manager::light_specular_fx.use();
 		fx_manager::light_specular_fx.set_float("x", this->x + (this->w / 2));
 		fx_manager::light_specular_fx.set_float("y", this->y + (this->h / 2));
+		fx_manager::light_specular_fx.set_float("scale", 1.2f);
 
-		util::render::shape(0, 0, screen_w, screen_h, util::color(255, 0, 0, 255));
+		util::render::shape(0, 0, screen_w, screen_h, util::color(255, 255, 255, 100));
 		tessellator::fx();
 
 		this->color_white.a = alpha;
