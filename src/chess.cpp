@@ -123,6 +123,42 @@ bool chess::matrix::get(piece_data &_piece_data, uint8_t pos) {
 	return true;
 }
 
+void chess::matrix::align(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2) {
+	// left-down
+	matrix_2x2_1[0] = 1;
+	matrix_2x2_2[0] = 1;
+
+	// right-down
+	matrix_2x2_1[1] = 1;
+	matrix_2x2_2[1] = 0;
+
+	// top-right
+	matrix_2x2_1[2] = -1;
+	matrix_2x2_2[2] = 1;
+
+	// top-left
+	matrix_2x2_1[3] = -1;
+	matrix_2x2_2[3] = 0;
+}
+
+void chess::matrix::unalign(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2) {
+	// left-down
+	matrix_2x2_1[0] = 1;
+	matrix_2x2_2[0] = 1;
+
+	// right-down
+	matrix_2x2_1[1] = -1;
+	matrix_2x2_2[1] = 1;
+
+	// top-right
+	matrix_2x2_1[2] = -1;
+	matrix_2x2_2[2] = -1;
+
+	// top-left
+	matrix_2x2_1[3] = 1;
+	matrix_2x2_2[3] = -1;
+}
+
 void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col) {
 	bool white = ((bool) color_factory);
 	bool real = false;
@@ -133,9 +169,11 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 	uint8_t next_row = row;
 	uint8_t next_col = col;
 
-	// Directions.
-	int8_t mask_velocity_factor[4] = {1, 1, -1, -1};
-	uint8_t mask_array_index[4] = {1, 0, 1, 0};
+	// Mask inital used to mark vectors direction and matrix pos.
+	int8_t mask_factor_flag_1[4];
+	int8_t mask_factor_flag_2[4];
+
+	chess::matrix::align(mask_factor_flag_1, mask_factor_flag_2);
 
 	// I made EVERYTHING in this game-project, except the texture. 
 	// The path finder use matrix.
@@ -198,7 +236,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			concurrent_i = i - previous_i;
 
 			// Move with base in stage (direction)
-			chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_col : next_row, mask_velocity_factor[concurrent_mask_i]);
+			chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_col : next_row, mask_factor_flag_1[concurrent_mask_i]);
 
 			// Verify if contains an empty slot or if is an enemy.
 			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
@@ -242,19 +280,19 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			real = true;
 
 			// Move with base in stage (direction)
-			chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_col : next_row, mask_velocity_factor[concurrent_mask_i]);
+			chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_col : next_row, mask_factor_flag_1[concurrent_mask_i]);
 			concurrent_stage++;
 
 			// Now just find some enemy close.
 			if (concurrent_stage == 2) {
-				chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_row : next_col, -1);
+				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_row : next_col, -1);
 
 				// First side.
 				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
 					pos_list.push_back(pos);
 				}
 
-				chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_row : next_col, 2);
+				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_row : next_col, 2);
 
 				// Second/last side.
 				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
@@ -282,6 +320,190 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			}
 		}
 		/* End of horse path finder. */
+	} else if (type == chess::piece::BISHOP) {
+		/* Start of bishop path finder. */
+		// Concurrent iterations from difference and stages.
+		uint8_t concurrent_mask_i = 0;
+		uint8_t concurrent_i = 0;
+		uint8_t previous_i = 0;
+
+		// Set new values for directions:
+		chess::matrix::unalign(mask_factor_flag_1, mask_factor_flag_2);
+
+		// 1..33 = 32
+		for (uint8_t i = 1; i < 33; i++) {
+			concurrent_i = i - previous_i;
+
+			// Move with base in stage (direction)
+			chess::matrix::move(next_row, mask_factor_flag_1[concurrent_mask_i]);
+			chess::matrix::move(next_col, mask_factor_flag_2[concurrent_mask_i]);
+
+			// Verify if contains an empty slot or if is an enemy.
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			
+			if (real) {
+				pos_list.push_back(pos);
+
+				// If is an enemy stop this stage and go next.
+				if (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory) {
+					real = false;
+				}
+			}
+
+			// For move the stages.
+			if (concurrent_i == 8 || !real) {
+				previous_i = i;
+
+				// Break at four stage.
+				if (concurrent_mask_i == 3) {
+					break;
+				}
+
+				concurrent_mask_i++;
+
+				next_row = row;
+				next_col = col;
+			}
+		}
+		/* End of bishop path finder. */	
+	} else if (type == chess::piece::QUEEN) { // ME <3 Rina
+		/* Start of queen path finder. */
+		bool next_stage;
+		bool next_stage_fix_matrix;
+
+		// Concurrent iterations from difference and stages.
+		uint8_t concurrent_mask_i = 0;
+		uint8_t concurrent_i = 0;
+		uint8_t previous_i = 0;
+
+		// Set unligned matrix direction.
+		chess::matrix::unalign(mask_factor_flag_1, mask_factor_flag_2);
+
+		// 1..65 = 64
+		for (uint8_t i = 1; i < 65; i++) {
+			concurrent_i = i - previous_i;
+
+			// Move with base in stage (direction)
+			if (next_stage) {
+				if (next_stage_fix_matrix) {
+					chess::matrix::align(mask_factor_flag_1, mask_factor_flag_2);
+					next_stage_fix_matrix = false;
+				}
+
+				// Move with base in stage (direction)
+				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_col : next_row, mask_factor_flag_1[concurrent_mask_i]);
+			} else {
+				chess::matrix::move(next_row, mask_factor_flag_1[concurrent_mask_i]);
+				chess::matrix::move(next_col, mask_factor_flag_2[concurrent_mask_i]);
+			}
+
+			// Verify if contains an empty slot or if is an enemy.
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			
+			if (real) {
+				pos_list.push_back(pos);
+
+				// If is an enemy stop this stage and go next.
+				if (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory) {
+					real = false;
+				}
+			}
+
+			// For move the stages.
+			if (concurrent_i == 8 || !real) {
+				previous_i = i;
+				real = false;
+
+				// Break at four stage.
+				if (concurrent_mask_i == 3) {
+					if (!next_stage) {
+						next_stage = true;
+						next_stage_fix_matrix = true;
+						concurrent_mask_i = 0;
+						real = true;
+					} else {
+						break;
+					}
+				}
+
+				if (!real) {
+					concurrent_mask_i++;
+				}
+
+				next_row = row;
+				next_col = col;
+			}
+		}
+		/* End of queen path finder. */
+	} else if (type == chess::piece::KING) {
+		/* Start of king path finder. */
+		bool next_stage;
+		bool next_stage_fix_matrix;
+
+		// Concurrent iterations from difference and stages.
+		uint8_t concurrent_mask_i = 0;
+		uint8_t concurrent_i = 0;
+		uint8_t previous_i = 0;
+
+		// Set unligned matrix direction.
+		chess::matrix::unalign(mask_factor_flag_1, mask_factor_flag_2);
+
+		// 1..65 = 64
+		for (uint8_t i = 1; i < 9; i++) {
+			concurrent_i = i - previous_i;
+
+			// Move with base in stage (direction)
+			if (next_stage) {
+				if (next_stage_fix_matrix) {
+					chess::matrix::align(mask_factor_flag_1, mask_factor_flag_2);
+					next_stage_fix_matrix = false;
+				}
+
+				// Move with base in stage (direction)
+				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_col : next_row, mask_factor_flag_1[concurrent_mask_i]);
+			} else {
+				chess::matrix::move(next_row, mask_factor_flag_1[concurrent_mask_i]);
+				chess::matrix::move(next_col, mask_factor_flag_2[concurrent_mask_i]);
+			}
+
+			// Verify if contains an empty slot or if is an enemy.
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			
+			if (real) {
+				pos_list.push_back(pos);
+
+				// If is an enemy stop this stage and go next.
+				if (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory) {
+					real = false;
+				}
+			}
+
+			// For move the stages.
+			if (concurrent_i == 8 || !real) {
+				previous_i = i;
+				real = false;
+
+				// Break at four stage.
+				if (concurrent_mask_i == 3) {
+					if (!next_stage) {
+						next_stage = true;
+						next_stage_fix_matrix = true;
+						concurrent_mask_i = 0;
+						real = true;
+					} else {
+						break;
+					}
+				}
+
+				if (!real) {
+					concurrent_mask_i++;
+				}
+
+				next_row = row;
+				next_col = col;
+			}
+		}
+		/* End of king path finder. */
 	}
 }
 
