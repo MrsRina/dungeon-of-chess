@@ -367,7 +367,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		}
 		/* End of bishop path finder. */	
 	} else if (type == chess::piece::QUEEN) { // ME <3 Rina
-		/* Start of queen path finder. */
+		/* Start of rina path finder. */
 		bool next_stage;
 		bool next_stage_fix_matrix;
 
