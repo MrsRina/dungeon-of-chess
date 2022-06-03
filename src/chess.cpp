@@ -100,7 +100,7 @@ void chess::matrix::from(float x, float y, uint8_t &row, uint8_t &col) {
 	col = util::math::clampi(col, 0, 8); 
 }
 
-void chess::matrix::move(uint8_t &not_matrix_pos, uint8_t velocity) {
+void chess::matrix::move(uint8_t &not_matrix_pos, int8_t velocity) {
 	not_matrix_pos += velocity;
 	not_matrix_pos = util::math::clampi(not_matrix_pos, 0, 8);
 }
@@ -134,7 +134,8 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 	uint8_t next_col = col;
 
 	// Directions.
-	int8_t directions[2] = {1, -1};
+	int8_t mask_velocity_factor[4] = {1, 1, -1, -1};
+	uint8_t mask_array_index[4] = {1, 0, 1, 0};
 
 	// I made EVERYTHING in this game-project, except the texture. 
 	// The path finder use matrix.
@@ -182,31 +183,22 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory) {
 			pos_list.push_back(pos);
 		}
-
 		/* End of pawn path finder. */
 	} else if (type == chess::piece::TOWER) {
 		/* Start of tower path finder. */
 		chess::matrix::get(concurrent_piece, chess::matrix::find(next_row, next_col));
 
 		// Concurrent iterations from difference and stages.
-		uint8_t concurrent_stage = 0;
+		uint8_t concurrent_mask_i = 0;
 		uint8_t concurrent_i = 0;
 		uint8_t previous_i = 0;
 
 		// 1..33 = 32
-		for (uint8_t i = 0; i < 32; i++) {
+		for (uint8_t i = 1; i < 33; i++) {
 			concurrent_i = i - previous_i;
 
 			// Move with base in stage (direction)
-			if (concurrent_stage == 0) {
-				chess::matrix::move(next_col, 1);
-			} else if (concurrent_stage == 1) {
-				chess::matrix::move(next_row, 1);
-			} else if (concurrent_stage == 2) {
-				chess::matrix::move(next_col, -1);
-			} else if (concurrent_stage == 3) {
-				chess::matrix::move(next_row, -1);
-			}
+			chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_col : next_row, mask_velocity_factor[concurrent_mask_i]);
 
 			// Verify if contains an empty slot or if is an enemy.
 			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
@@ -222,19 +214,72 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 
 			// For move the stages.
 			if (concurrent_i == 8 || !real) {
-				concurrent_stage++;
 				previous_i = i;
 
 				// Break at four stage.
-				if (concurrent_stage > 4) {
+				if (concurrent_mask_i == 3) {
 					break;
 				}
+
+				concurrent_mask_i++;
 
 				next_row = row;
 				next_col = col;
 			}
 		}
 		/* End of tower path finder. */
+	} else if (type == chess::piece::HORSE) {
+		/* Start of horse path finder. */
+		// Concurrent iterations from difference and stages.
+		uint8_t concurrent_stage = 0;
+		uint8_t concurrent_mask_i = 0;
+		uint8_t concurrent_i = 0;
+		uint8_t previous_i = 0;
+
+		// 1..13 = 12
+		for (uint8_t i = 1; i < 13; i++) {
+			concurrent_i = i - previous_i;
+			real = true;
+
+			// Move with base in stage (direction)
+			chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_col : next_row, mask_velocity_factor[concurrent_mask_i]);
+			concurrent_stage++;
+
+			if (concurrent_stage == 2) {
+				chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_row : next_col, -1);
+
+				// Verify if contains an empty slot or if is an enemy.
+				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
+					pos_list.push_back(pos);
+				}
+
+				chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_row : next_col, 2);
+
+				// Verify if contains an empty slot or if is an enemy.
+				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
+					pos_list.push_back(pos);
+				}
+
+				real = false;
+			}
+
+			// For move the stages.
+			if (concurrent_i == 2 || !real) {
+				previous_i = i;
+				concurrent_stage = 0;
+
+				// Break at four stage.
+				if (concurrent_mask_i == 3) {
+					break;
+				}
+
+				concurrent_mask_i++;
+
+				next_row = row;
+				next_col = col;
+			}
+		}
+		/* End of horse path finder. */
 	}
 }
 
@@ -651,9 +696,9 @@ void chess::on_render(float render_ticks) {
 	fx_manager::light_specular_fx.use();
 	fx_manager::light_specular_fx.set_float("x", this->x + (this->w / 2));
 	fx_manager::light_specular_fx.set_float("y", this->y + (this->h / 2));
-	fx_manager::light_specular_fx.set_float("scale", 1.2f);
+	fx_manager::light_specular_fx.set_float("scale", 2.0f);
 
-	util::render::shape(0, 0, this->screen_w, this->screen_h, util::color(255, 255, 255, 100));
+	util::render::shape(0, 0, this->screen_w, this->screen_h, util::color(255, 255, 255, 200));
 	tessellator::fx();
 
 	this->color_white.a = alpha;

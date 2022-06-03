@@ -43,7 +43,7 @@ int main(int argv, char** argc) {
 
 	// Init SDL2 and create window.
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_Window* sdl_win = SDL_CreateWindow("Dungeon Of SDL2.", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_w, screen_h, SDL_WINDOW_OPENGL);
+	SDL_Window* sdl_win = SDL_CreateWindow("Dungeon Of SDL2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_w, screen_h, SDL_WINDOW_OPENGL);
 	
 	// Init SDL image.
 	IMG_Init(IMG_INIT_PNG);

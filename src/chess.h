@@ -77,7 +77,7 @@ struct chess {
 
 	struct matrix {
 		static void from(float x, float y, uint8_t &row, uint8_t &col);
-		static void move(uint8_t &not_matrix_pos, uint8_t velocity);
+		static void move(uint8_t &not_matrix_pos, int8_t velocity);
 
 		static bool get(piece_data &_piece_data, uint8_t pos);
 		static void possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col);

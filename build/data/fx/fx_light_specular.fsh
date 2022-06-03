@@ -41,7 +41,7 @@ void main() {
 	pos.y = pos.y - y;
 
 	// Get the alpha difference by distance.
-	float alpha_diff = 255 - clamp(sqrt(pos.x * pos.x + pos.y * pos.y) * scale, 0, 255);
+	float alpha_diff = 255 - clamp(sqrt(pos.x * pos.x + pos.y * pos.y) / scale, 0, 255);
 
 	// Set new fragment alpha.
 	fragment.a = (fragment.a - (1.0f - (alpha_diff / 255.0f)));
