@@ -17,11 +17,12 @@ struct piece_data {
 };
 
 struct entity_piece {
+	bool dead;
+
 	float x, y, w, h;
 	float previous_x, previous_y;
 
-	bool alive;
-	uint8_t death_master;
+	uint8_t color_of_tha_death;
 	uint8_t color_factory;
 	uint8_t pos;
 
@@ -38,6 +39,9 @@ struct entity_piece {
 		this->texture = _texture;
 	}
 
+	void kill(uint8_t the_death_master);
+	void ressure(uint8_t pos);
+
 	void set_color(uint8_t color);
 	void set(piece_data &_piece_data);
 	void on_render(float render_ticks);
@@ -46,7 +50,7 @@ struct entity_piece {
 struct chess {
 	static uint8_t OUT_RANGE;
 	static uint8_t TOP;
-	static uint8_t DOWN;
+	static uint8_t BOTTOM;
 
 	struct piece {
 		static uint8_t PAWN;
@@ -93,6 +97,18 @@ struct chess {
 	static std::map<uint8_t, piece_data> piece_type_map;
 	static float square_size;
 
+	static util::texture texture;
+	static uint8_t white_dock; 
+
+	static void set_piece(entity_piece &entity, uint8_t type);
+	static void move(entity_piece &entity, uint8_t pos);
+	static bool entities_bouding_box_collide(entity_piece &entity_1, entity_piece &entity_2);
+	static void relative_height(entity_piece &entity, float &height);
+
+	static void crawl_to_the_ressurection(entity_piece &the_entity, uint8_t pos);
+	static void creep_4_tha_death(entity_piece &the_death_as_an_entity_piece);
+
+	util::color color_white = util::color(255, 255, 255, 255), color_black = util::color(0, 0, 0, 255);
 	std::vector<uint8_t> possible;
 
 	piece_data hovered;
@@ -102,22 +118,13 @@ struct chess {
 	uint8_t focused;
 
 	bool start_pos, end_pos;
-
 	bool over;
 	bool gaming;
-	bool dragging;
+	bool update;
+	bool godmode;
 
 	float x, y, w, h, dx, dy, screen_w, screen_h;
 	uint8_t alpha;
-	
-	static util::texture texture;
-	static uint8_t white_dock; 
-
-	util::color color_white = util::color(255, 255, 255, 255), color_black = util::color(0, 0, 0, 255);
-
-	static void set_piece(entity_piece &entity, uint8_t type);
-	static uint8_t find(const std::string &letter, uint8_t slot);
-	static void move(entity_piece &entity, uint8_t pos);
 
 	void new_game();
 	void end_game();
@@ -127,6 +134,7 @@ struct chess {
 	bool contains(uint8_t pos);
 
 	void on_event(SDL_Event &sdl_event);
+	void on_update(uint64_t delta);
 	void on_render(float render_ticks);
 };
 

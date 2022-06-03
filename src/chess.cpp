@@ -15,7 +15,7 @@ piece_data chess::render::king   = piece_data();
 
 uint8_t chess::OUT_RANGE = 66;
 uint8_t chess::TOP       = 67;
-uint8_t chess::DOWN      = 68;
+uint8_t chess::BOTTOM    = 68;
 
 uint8_t chess::piece::EMPTY  = 0;
 uint8_t chess::piece::PAWN   = 1;
@@ -41,9 +41,19 @@ void entity_piece::set_color(uint8_t color) {
 	this->piece_slot.color = color;
 }
 
+void entity_piece::kill(uint8_t color) {
+	this->color_of_tha_death = color;
+	this->dead = true;
+}
+
+void entity_piece::ressure(uint8_t pos) {
+	this->pos = pos;
+	this->dead = false;
+}
+
 void entity_piece::set(piece_data &_piece_data) {
 	this->piece_slot = _piece_data;
-	this->alive = true;
+	this->dead = false;
 }
 
 void entity_piece::on_render(float render_ticks) {
@@ -113,7 +123,7 @@ bool chess::matrix::get(piece_data &_piece_data, uint8_t pos) {
 	_piece_data = chess::map[pos];
 
 	for (entity_piece &entity : chess::loaded_entity_list) {
-		if (entity.pos == pos) {
+		if (entity.pos == pos && !entity.dead) {
 			_piece_data = entity.piece_slot;
 			_piece_data.color = entity.color_factory;
 			break;
@@ -170,8 +180,8 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 	uint8_t next_col = col;
 
 	// Mask inital used to mark vectors direction and matrix pos.
-	int8_t mask_factor_flag_1[4];
-	int8_t mask_factor_flag_2[4];
+	int8_t mask_factor_flag_1[4]; // Force.
+	int8_t mask_factor_flag_2[4]; // Velocity.
 
 	chess::matrix::align(mask_factor_flag_1, mask_factor_flag_2);
 
@@ -368,8 +378,8 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		/* End of bishop path finder. */	
 	} else if (type == chess::piece::QUEEN) { // ME <3 Rina
 		/* Start of rina path finder. */
-		bool next_stage;
-		bool next_stage_fix_matrix;
+		bool next_stage = false;
+		bool next_stage_fix_matrix = false;
 
 		// Concurrent iterations from difference and stages.
 		uint8_t concurrent_mask_i = 0;
@@ -393,8 +403,8 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 				// Move with base in stage (direction)
 				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_col : next_row, mask_factor_flag_1[concurrent_mask_i]);
 			} else {
-				chess::matrix::move(next_row, mask_factor_flag_1[concurrent_mask_i]);
-				chess::matrix::move(next_col, mask_factor_flag_2[concurrent_mask_i]);
+				chess::matrix::move(next_row, mask_factor_flag_1[concurrent_mask_i]); // The row force.
+				chess::matrix::move(next_col, mask_factor_flag_2[concurrent_mask_i]); // The col force.
 			}
 
 			// Verify if contains an empty slot or if is an enemy.
@@ -437,8 +447,8 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		/* End of queen path finder. */
 	} else if (type == chess::piece::KING) {
 		/* Start of king path finder. */
-		bool next_stage;
-		bool next_stage_fix_matrix;
+		bool next_stage = false;
+		bool next_stage_fix_matrix = false;
 
 		// Concurrent iterations from difference and stages.
 		uint8_t concurrent_mask_i = 0;
@@ -479,7 +489,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			}
 
 			// For move the stages.
-			if (concurrent_i == 8 || !real) {
+			if (concurrent_i == 1 || !real) {
 				previous_i = i;
 				real = false;
 
@@ -574,6 +584,41 @@ uint8_t chess::matrix::find(uint8_t row, uint8_t col) {
 	return chess::OUT_RANGE;
 }
 
+void chess::relative_height(entity_piece &entity, float &height) {
+	height = -entity.h;
+
+	if ((entity.color_factory == 1 && chess::white_dock == chess::BOTTOM) || entity.color_factory == 0) {
+		// A chess have 8 slots but we want to move out of bound height, 8 + 1 (invisible slot).
+		height = chess::white_dock == chess::BOTTOM ? (entity.h * 9) : height;
+	}
+}
+
+bool chess::entities_bouding_box_collide(entity_piece &entity_1, entity_piece &entity_2) {
+	float x = entity_1.x;
+	float y = entity_1.y;
+	float w = x + entity_1.w;
+	float h = y + entity_1.h;
+
+	return x < entity_2.x + entity_2.w && w > entity_2.x &&
+		   y < entity_2.y + entity_2.h && h > entity_2.y;
+}
+
+void chess::crawl_to_the_ressurection(entity_piece &the_entity, uint8_t pos) {
+
+}
+
+void chess::creep_4_tha_death(entity_piece &the_death_as_an_entity_piece) {
+	// Verify if an entity pos is equals to the moved piece 'the_death_as_an_entity_piece'.
+	// Always based on color to prevent moved entity self-collide.
+	for (entity_piece &entity : chess::loaded_entity_list) {
+		if (!entity.dead && entity.color_factory != the_death_as_an_entity_piece.color_factory && entity.pos == the_death_as_an_entity_piece.pos && chess::entities_bouding_box_collide(the_death_as_an_entity_piece, entity)) {
+			entity.kill(the_death_as_an_entity_piece.color_factory);
+			break;
+		}
+	}
+
+	// The name is just a joke, gangstar yooo drip.
+}
 
 void chess::set_piece(entity_piece &entity, uint8_t type) {
 	entity.set(chess::piece_type_map[type]);
@@ -845,6 +890,12 @@ void chess::on_event(SDL_Event &sdl_event) {
 					if (entity.pos == this->matrix_pos[0]) {
 						// Move and flag that was moved.
 						chess::move(entity, this->matrix_pos[1]);
+
+						// No kill on godmode!
+						if (!this->godmode) {
+							chess::creep_4_tha_death(entity);
+						}
+
 						entity.piece_slot.moved = true;
 
 						this->start_pos = false;
@@ -906,6 +957,38 @@ void chess::on_event(SDL_Event &sdl_event) {
 		case SDL_MOUSEBUTTONUP: {
 			break;
 		}
+	}
+}
+
+void chess::on_update(uint64_t delta) {
+	update = delta < 500 ? false : delta;
+
+	if (delta > 500 && !update) {
+		float height = .0f;
+
+		// There is two axis to handle.
+		float axis_white = 0;
+		float axis_black = 0;
+
+		// Set position when kill some shit.
+		for (entity_piece &entity : chess::loaded_entity_list) {
+			if (!entity.dead) {
+				continue;
+			}
+
+			// Get relative height of color.
+			chess::relative_height(entity, height);
+
+			// Set position based on relative height.
+			entity.x = this->x + (entity.color_factory ? axis_white : axis_black);
+			entity.y = this->y + height;
+
+			// Update axis.
+			axis_white += entity.color_factory ? entity.h : 0;
+			axis_black += entity.color_factory ? 0 : entity.h;
+		}
+
+		update = true;
 	}
 }
 

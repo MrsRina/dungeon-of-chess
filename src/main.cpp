@@ -23,7 +23,7 @@ void on_event(SDL_Event &sdl_event) {
 }
 
 void on_update(uint64_t delta) {
-
+	chess_game.on_update(delta);
 }
 
 void on_render(float render_ticks) {
