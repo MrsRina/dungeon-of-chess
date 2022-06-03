@@ -245,30 +245,32 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_col : next_row, mask_velocity_factor[concurrent_mask_i]);
 			concurrent_stage++;
 
+			// Now just find some enemy close.
 			if (concurrent_stage == 2) {
 				chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_row : next_col, -1);
 
-				// Verify if contains an empty slot or if is an enemy.
+				// First side.
 				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
 					pos_list.push_back(pos);
 				}
 
 				chess::matrix::move(mask_array_index[concurrent_mask_i] == 1 ? next_row : next_col, 2);
 
-				// Verify if contains an empty slot or if is an enemy.
+				// Second/last side.
 				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
 					pos_list.push_back(pos);
 				}
 
+				// Reset/go next.
 				real = false;
 			}
 
-			// For move the stages.
+			// Reset stage and concurrent stuff.
 			if (concurrent_i == 2 || !real) {
 				previous_i = i;
 				concurrent_stage = 0;
 
-				// Break at four stage.
+				// Break at three stage.
 				if (concurrent_mask_i == 3) {
 					break;
 				}
