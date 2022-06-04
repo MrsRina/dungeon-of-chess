@@ -7,6 +7,7 @@ uint32_t screen_w = 800;
 uint32_t screen_h = 600;
 
 chess chess_game;
+SDL_Window* sdl_win;
 
 void on_event(SDL_Event &sdl_event) {
 	switch (sdl_event.type) {
@@ -19,6 +20,21 @@ void on_event(SDL_Event &sdl_event) {
 
 			break;
 		}
+
+		case SDL_WINDOWEVENT: {
+			if (sdl_event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+				int32_t w, h;
+				SDL_GetWindowSize(sdl_win, &w, &h);
+
+				screen_w = (uint32_t) w;
+				screen_h = (uint32_t) h;
+
+				chess_game.set_pos((screen_w / 2) - (chess_game.w / 2), (screen_h / 2) - (chess_game.h / 2));
+				chess_game.refresh(sdl_win);
+			}
+
+			break;
+		}
 	}
 }
 
@@ -27,6 +43,9 @@ void on_update(uint64_t delta) {
 }
 
 void on_render(float render_ticks) {
+	// Set viewport.
+	glViewport(0, 0, screen_w, screen_h);
+
 	// Prepare context of us tools.
 	shader_manager::context();
 	fx_manager::context();
@@ -43,7 +62,7 @@ int main(int argv, char** argc) {
 
 	// Init SDL2 and create window.
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_Window* sdl_win = SDL_CreateWindow("Dungeon Of SDL2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_w, screen_h, SDL_WINDOW_OPENGL);
+	sdl_win = SDL_CreateWindow("Dungeon of SDL2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_w, screen_h, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 	
 	// Init SDL image.
 	IMG_Init(IMG_INIT_PNG);
@@ -92,13 +111,14 @@ int main(int argv, char** argc) {
 	// Init chess stuff.
 	chess_game.alpha = 200;
 	chess::square_size = 60;
-	chess_game.init();
+
+	// After setup settings we init main core and render core.
+	chess_game.init(sdl_win);
 	chess::render::init();
 
 	// Based on metrics of chess table, set new pos and refresh.
-	chess_game.x = (screen_w / 2) - (chess_game.w / 2);
-	chess_game.y = (screen_h / 2) - (chess_game.h / 2);
-	chess_game.refresh();
+	chess_game.set_pos((screen_w / 2) - (chess_game.w / 2), (screen_h / 2) - (chess_game.h / 2));
+	chess_game.refresh(sdl_win);
 	chess_game.new_game();
 
 	while (running) {
@@ -121,8 +141,10 @@ int main(int argv, char** argc) {
 			previous_ticks = SDL_GetTicks64();
 			delta += current_ticks;
 
-			// Update and render.
+			// Segment of update.
 			on_update(delta);
+
+			// Segment of render.
 			on_render((float) current_ticks / the_fps_config);
 
 			// Count elapsed frames after render.

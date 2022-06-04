@@ -587,8 +587,10 @@ uint8_t chess::matrix::find(uint8_t row, uint8_t col) {
 void chess::relative_height(entity_piece &entity, uint8_t color_factory, float &height) {
 	height = (chess::square_size * 8);
 
-	if (color_factory == 1 && chess::white_dock == chess::BOTTOM) {
-		height = chess::white_dock == chess::BOTTOM ? -height : height;
+	if (color_factory == 0) {
+		height = chess::white_dock == chess::TOP ? height : -entity.h;
+	} else {
+		height = chess::white_dock == chess::BOTTOM ? height : -entity.h;
 	}
 }
 
@@ -646,8 +648,8 @@ void chess::move(entity_piece &entity, uint8_t pos) {
 	entity.y = chess::map[0].y + (vec[1] * chess::square_size);
 }
 
-void chess::init() {
-	this->refresh();
+void chess::init(SDL_Window* &sdl_window) {
+	this->refresh(sdl_window);
 
 	if (!util::file::read_texture(texture, GL_RGBA, "data/textures/chess-symbols.png")) {
 		util::log("Could not load chess symbols texture.");
@@ -772,12 +774,33 @@ void chess::end_game() {
 	this->gaming = false;
 }
 
-void chess::refresh() {
-	SDL_DisplayMode sdl_display_mode;
-	SDL_GetDisplayMode(0, 0, &sdl_display_mode);
+void chess::set_pos(float pos_x, float pos_y) {
+	if (this->x != pos_x || this->y != pos_y) {
+		float old_pos_x = 0, old_pos_y = 0;
 
-	this->screen_w = sdl_display_mode.w;
-	this->screen_h = sdl_display_mode.h;
+		for (entity_piece &entity : chess::loaded_entity_list) {
+			old_pos_x = entity.x - this->x;
+			old_pos_y = entity.y - this->y;
+
+			entity.x = pos_x + old_pos_x;
+			entity.y = pos_y + old_pos_y;
+
+			entity.previous_x = entity.x;
+			entity.previous_y = entity.y;
+		}
+
+		this->x = pos_x;
+		this->y = pos_y;
+	}
+}
+
+void chess::refresh(SDL_Window* &sdl_window) {
+	int32_t w, h;
+
+	SDL_GetWindowSize(sdl_window, &w, &h);
+
+	this->screen_w = (float) w;
+	this->screen_w = (float) h;
 
 	this->w = 8 * chess::square_size;
 	this->h = 8 * chess::square_size;

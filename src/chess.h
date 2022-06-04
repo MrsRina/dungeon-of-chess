@@ -129,8 +129,9 @@ struct chess {
 	void new_game();
 	void end_game();
 	
-	void init();
-	void refresh();
+	void init(SDL_Window* &sdl_window);
+	void refresh(SDL_Window* &sdl_window);
+	void set_pos(float pos_x, float pos_y);
 	bool contains(uint8_t pos);
 
 	void on_event(SDL_Event &sdl_event);
