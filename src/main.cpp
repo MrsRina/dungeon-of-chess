@@ -110,9 +110,13 @@ int main(int argv, char** argc) {
 
 	// Init chess stuff.
 	chess_game.alpha = 200;
-	chess::square_size = 60;
+	chess_game.gamemode_godmode = false;
+	chess_game.gamemode_cycle = true;
 
 	// After setup settings we init main core and render core.
+	chess::square_size = 60;
+	chess::white_dock = chess::BOTTOM;
+
 	chess_game.init(sdl_win);
 	chess::render::init();
 

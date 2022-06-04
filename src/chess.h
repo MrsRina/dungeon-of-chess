@@ -118,10 +118,16 @@ struct chess {
 	uint8_t focused;
 
 	bool start_pos, end_pos;
+	bool update;
 	bool over;
 	bool gaming;
-	bool update;
-	bool godmode;
+
+	/* Gamemodes in game. */
+	bool gamemode_cycle;
+	bool gamemode_godmode;
+
+	uint8_t concurrent_color_moved;
+	uint8_t previous_color_moved;
 
 	float x, y, w, h, dx, dy, screen_w, screen_h;
 	uint8_t alpha;

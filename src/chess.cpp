@@ -660,6 +660,8 @@ void chess::init(SDL_Window* &sdl_window) {
 
 void chess::new_game() {
 	this->gaming = true;
+	this->previous_color_moved = 0;
+
 	chess::loaded_entity_list.clear();
 	uint8_t not_infantry[8] = {piece::TOWER, piece::HORSE, piece::BISHOP, piece::KING, piece::QUEEN, piece::BISHOP, piece::HORSE, piece::TOWER};
 
@@ -796,7 +798,6 @@ void chess::set_pos(float pos_x, float pos_y) {
 
 void chess::refresh(SDL_Window* &sdl_window) {
 	int32_t w, h;
-
 	SDL_GetWindowSize(sdl_window, &w, &h);
 
 	this->screen_w = (float) w;
@@ -915,27 +916,29 @@ void chess::on_event(SDL_Event &sdl_event) {
 				if (start_flag) {
 					// 0 == current/old position; 1 == next/new position.
 					if (entity.pos == this->matrix_pos[0]) {
-						// Move and flag that was moved.
+						// Move and set moved flag.
 						chess::move(entity, this->matrix_pos[1]);
+						entity.piece_slot.moved = true;
 
-						// No kill on godmode!
-						if (!this->godmode) {
+						// Killa section...
+						if (!this->gamemode_godmode) {
 							chess::creep_4_tha_death(entity);
 						}
-
-						entity.piece_slot.moved = true;
 
 						this->start_pos = false;
 						this->end_pos = false;
 						this->possible.clear();
-							
+
+						// 0 black; 1 white.
+						this->previous_color_moved = this->concurrent_color_moved;
 						break;
 					}
 
 					continue;
 				}
 
-				if (x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h) {
+				if (x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && (!this->gamemode_cycle || this->gamemode_cycle && this->previous_color_moved != entity.color_factory)) {
+					this->concurrent_color_moved = entity.color_factory;
 					this->possible.clear();
 
 					this->start.x = entity.x;
