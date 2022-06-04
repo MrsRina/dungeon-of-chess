@@ -584,12 +584,11 @@ uint8_t chess::matrix::find(uint8_t row, uint8_t col) {
 	return chess::OUT_RANGE;
 }
 
-void chess::relative_height(entity_piece &entity, float &height) {
-	height = -entity.h;
+void chess::relative_height(entity_piece &entity, uint8_t color_factory, float &height) {
+	height = (chess::square_size * 8);
 
-	if ((entity.color_factory == 1 && chess::white_dock == chess::BOTTOM) || entity.color_factory == 0) {
-		// A chess have 8 slots but we want to move out of bound height, 8 + 1 (invisible slot).
-		height = chess::white_dock == chess::BOTTOM ? (entity.h * 9) : height;
+	if (color_factory == 1 && chess::white_dock == chess::BOTTOM) {
+		height = chess::white_dock == chess::BOTTOM ? -height : height;
 	}
 }
 
@@ -613,6 +612,7 @@ void chess::creep_4_tha_death(entity_piece &the_death_as_an_entity_piece) {
 	for (entity_piece &entity : chess::loaded_entity_list) {
 		if (!entity.dead && entity.color_factory != the_death_as_an_entity_piece.color_factory && entity.pos == the_death_as_an_entity_piece.pos && chess::entities_bouding_box_collide(the_death_as_an_entity_piece, entity)) {
 			entity.kill(the_death_as_an_entity_piece.color_factory);
+			chess::map[entity.pos].type = chess::piece::EMPTY;
 			break;
 		}
 	}
@@ -885,6 +885,10 @@ void chess::on_event(SDL_Event &sdl_event) {
 			entity_piece entity;
 
 			for (entity_piece &entity : chess::loaded_entity_list) {
+				if (entity.dead) {
+					continue;
+				}
+
 				if (start_flag) {
 					// 0 == current/old position; 1 == next/new position.
 					if (entity.pos == this->matrix_pos[0]) {
@@ -961,14 +965,17 @@ void chess::on_event(SDL_Event &sdl_event) {
 }
 
 void chess::on_update(uint64_t delta) {
-	update = delta < 500 ? false : delta;
+	this->update = delta > 800;
 
-	if (delta > 500 && !update) {
+	if (delta > 500 && delta < 600 && !this->update) {
 		float height = .0f;
 
 		// There is two axis to handle.
 		float axis_white = 0;
 		float axis_black = 0;
+
+		float axis_diff = chess::square_size / 2;
+		float axis_sync = 0;
 
 		// Set position when kill some shit.
 		for (entity_piece &entity : chess::loaded_entity_list) {
@@ -977,18 +984,22 @@ void chess::on_update(uint64_t delta) {
 			}
 
 			// Get relative height of color.
-			chess::relative_height(entity, height);
+			entity.w = axis_diff;
+			entity.h = axis_diff;
+			chess::relative_height(entity, entity.color_of_tha_death, height);
+
+			axis_sync = (entity.color_factory ? axis_white : axis_black);
 
 			// Set position based on relative height.
-			entity.x = this->x + (entity.color_factory ? axis_white : axis_black);
+			entity.x = this->x + axis_sync;
 			entity.y = this->y + height;
 
 			// Update axis.
-			axis_white += entity.color_factory ? entity.h : 0;
-			axis_black += entity.color_factory ? 0 : entity.h;
+			axis_white += entity.color_factory ? entity.w : 0;
+			axis_black += entity.color_factory ? 0 : entity.w;
 		}
 
-		update = true;
+		this->update = true;
 	}
 }
 

@@ -103,7 +103,7 @@ struct chess {
 	static void set_piece(entity_piece &entity, uint8_t type);
 	static void move(entity_piece &entity, uint8_t pos);
 	static bool entities_bouding_box_collide(entity_piece &entity_1, entity_piece &entity_2);
-	static void relative_height(entity_piece &entity, float &height);
+	static void relative_height(entity_piece &entity, uint8_t color_factor, float &height);
 
 	static void crawl_to_the_ressurection(entity_piece &the_entity, uint8_t pos);
 	static void creep_4_tha_death(entity_piece &the_death_as_an_entity_piece);
