@@ -800,7 +800,7 @@ void chess::refresh(SDL_Window* &sdl_window) {
 	SDL_GetWindowSize(sdl_window, &w, &h);
 
 	this->screen_w = (float) w;
-	this->screen_w = (float) h;
+	this->screen_h = (float) h;
 
 	this->w = 8 * chess::square_size;
 	this->h = 8 * chess::square_size;
