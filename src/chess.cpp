@@ -61,7 +61,7 @@ void entity_piece::on_render(float render_ticks) {
 	this->previous_y = util::math::lerpf(this->previous_y, this->y, render_ticks);
 
 	// Draw the piece.
-	util::render::shape_texture(this->previous_x, this->previous_y, this->w, this->h, this->piece_slot.x, this->piece_slot.y, this->piece_slot.w, this->piece_slot.h, this->texture);
+	util::render::shape_texture(this->previous_x, this->previous_y, this->w, this->h, this->piece_slot.x, this->piece_slot.y, this->piece_slot.w, this->piece_slot.h, chess::texture);
 }
 
 void chess::render::init() {
@@ -584,14 +584,16 @@ uint8_t chess::matrix::find(uint8_t row, uint8_t col) {
 	return chess::OUT_RANGE;
 }
 
-void chess::relative_height(entity_piece &entity, uint8_t color_factory, float &height) {
-	height = (chess::square_size * 8);
+bool chess::relative_height(entity_piece &entity, uint8_t color_factory, float &height, uint8_t i) {
+	float full = (chess::square_size * i);
 
 	if (color_factory == 0) {
-		height = chess::white_dock == chess::TOP ? height : -entity.h;
+		height = chess::white_dock == chess::TOP ? full : -entity.h;
 	} else {
-		height = chess::white_dock == chess::BOTTOM ? height : -entity.h;
+		height = chess::white_dock == chess::BOTTOM ? full : -entity.h;
 	}
+
+	return height != full;
 }
 
 bool chess::entities_bouding_box_collide(entity_piece &entity_1, entity_piece &entity_2) {
@@ -604,8 +606,26 @@ bool chess::entities_bouding_box_collide(entity_piece &entity_1, entity_piece &e
 		   y < entity_2.y + entity_2.h && h > entity_2.y;
 }
 
-void chess::crawl_to_the_ressurection(entity_piece &the_entity, uint8_t pos) {
+void chess::crawl_to_the_ressurection(entity_piece &the_entity) {
+	the_entity.the_god_is_trying_to_talk_with_you = false;
 
+	if (the_entity.piece_slot.type != chess::piece::PAWN) {
+		return;
+	}
+
+	uint8_t flag = 0;
+	uint8_t vec[2];
+
+	chess::matrix::vec(vec, the_entity.pos);
+
+	// 1 white; 0 black.
+	if (the_entity.color_factory) {
+		flag = chess::white_dock == chess::TOP ? vec[1] == 7 : vec[1] == 0;
+	} else {
+		flag = chess::white_dock == chess::BOTTOM ? vec[1] == 7 : vec[1] == 0;
+	}
+
+	the_entity.the_god_is_trying_to_talk_with_you = flag;
 }
 
 void chess::creep_4_tha_death(entity_piece &the_death_as_an_entity_piece) {
@@ -690,9 +710,6 @@ void chess::new_game() {
 			piece_white.x = this->x + (chess::square_size * ordened_count);
 			piece_black.x = this->x + (chess::square_size * ordened_count);
 
-			piece_white.texture = chess::texture;
-			piece_black.texture = chess::texture;
-
 			// Set entity color.
 			chess::render::set_color(piece_white, chess::color::WHITE);
 			chess::render::set_color(piece_black, chess::color::BLACK);
@@ -733,9 +750,6 @@ void chess::new_game() {
 
 			piece_white.x = this->x + (chess::square_size * ordened_count);
 			piece_black.x = this->x + (chess::square_size * ordened_count);
-
-			piece_white.texture = chess::texture;
-			piece_black.texture = chess::texture;
 
 			// Set entity color.
 			chess::render::set_color(piece_white, chess::color::WHITE);
@@ -862,7 +876,7 @@ void chess::on_event(SDL_Event &sdl_event) {
 
 			this->over = (x > this->x && y > this->y && x < this->x + this->w && y < this->y + this->h);
 
-			if (!this->over) {
+			if (!this->over && !this->ressurection) {
 				this->possible.clear();
 				this->start_pos = false;
 				this->end_pos = false;
@@ -905,11 +919,28 @@ void chess::on_event(SDL_Event &sdl_event) {
 				}
 			}
 
-			this->focused = chess::OUT_RANGE;
+			uint8_t hovered = chess::OUT_RANGE;
 			entity_piece entity;
 
 			for (entity_piece &entity : chess::loaded_entity_list) {
 				if (entity.dead) {
+					if (this->ressurection && x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && entity.color_factory == this->color_ressure) {
+						entity.w = chess::square_size;
+						entity.h = chess::square_size;
+						entity.ressure(this->focused);
+
+						uint8_t vec[2];
+						chess::matrix::vec(vec, this->focused);
+
+						entity.x = this->x + (vec[0] * chess::square_size);
+						entity.y = this->y + (vec[1] * chess::square_size);
+
+						this->ressurection = false;
+
+
+						break;
+					}
+
 					continue;
 				}
 
@@ -923,6 +954,13 @@ void chess::on_event(SDL_Event &sdl_event) {
 						// Killa section...
 						if (!this->gamemode_godmode) {
 							chess::creep_4_tha_death(entity);
+							chess::crawl_to_the_ressurection(entity);
+						}
+
+						if (entity.the_god_is_trying_to_talk_with_you) {
+							this->focused = entity.pos;
+							this->color_ressure = entity.color_factory;
+							this->ressurection = true;
 						}
 
 						this->start_pos = false;
@@ -937,7 +975,7 @@ void chess::on_event(SDL_Event &sdl_event) {
 					continue;
 				}
 
-				if (x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && (!this->gamemode_cycle || this->gamemode_cycle && this->previous_color_moved != entity.color_factory)) {
+				if (x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && !this->ressurection && (!this->gamemode_cycle || this->gamemode_cycle && this->previous_color_moved != entity.color_factory)) {
 					this->concurrent_color_moved = entity.color_factory;
 					this->possible.clear();
 
@@ -951,13 +989,13 @@ void chess::on_event(SDL_Event &sdl_event) {
 
 					chess::matrix::from(entity.x - this->x, entity.y - this->y, this->matrix_pos[0], this->matrix_pos[1]);
 					chess::matrix::possible(this->possible, entity.piece_slot.type, entity.color_factory, this->matrix_pos[0], this->matrix_pos[1]);
-						
-					this->focused = entity.pos;
+
+					hovered = entity.pos;
 					break;
 				}
 			}
 
-			if (this->focused == chess::OUT_RANGE) {
+			if (hovered == chess::OUT_RANGE) {
 				this->possible.clear();
 				this->start_pos = false;
 				this->end_pos = false;
@@ -971,6 +1009,7 @@ void chess::on_event(SDL_Event &sdl_event) {
 			float y = sdl_event.motion.y;
 
 			this->over = (x > this->x && y > this->y && x < this->x + this->w && y < this->y + this->h);
+			this->my = y;
 
 			if (this->over) {
 				for (piece_data &pieces : chess::map) {
@@ -1045,8 +1084,46 @@ void chess::on_render(float render_ticks) {
 	util::render::shape(0, 0, this->screen_w, this->screen_h, util::color(255, 255, 255, 200));
 	tessellator::fx();
 
-	this->color_white.a = alpha;
-	this->color_black.a = alpha;
+	float width = chess::square_size / 4;
+	float offset = width + (width / 2);
+
+	if (this->gamemode_cycle) {
+		float color_fill_factor = this->previous_color_moved ? 0 : 255;
+
+		// Draw the concurrent color to move.
+		tessellator::fx(fx_manager::light_specular_fx);
+
+		// Set the specular light position.
+		fx_manager::light_specular_fx.use();
+		fx_manager::light_specular_fx.set_float("x", this->x + offset);
+		fx_manager::light_specular_fx.set_float("y", util::math::clampf(this->my, this->y, this->y + this->h));
+		fx_manager::light_specular_fx.set_float("scale", 1.0f);
+
+		util::render::shape(this->x - offset, this->y, width, this->h, util::color(color_fill_factor, color_fill_factor, color_fill_factor, this->alpha));
+		tessellator::fx();
+	}
+
+	if (this->ressurection) {
+		float height = 0;
+
+		this->rina_notify.w = chess::square_size;
+		this->rina_notify.h = chess::square_size;
+
+		if (chess::relative_height(this->rina_notify, this->color_ressure, height, 7)) {
+			height += rina_notify.h;
+		}
+
+		this->rina_notify.x = this->x - width - offset - offset - chess::square_size;
+		this->rina_notify.y = this->y + height;
+		this->rina_notify.set(chess::render::queen);
+		this->rina_notify.set_color(this->color_ressure);
+
+		chess::render::set_color(this->rina_notify, chess::render::get_color(this->rina_notify));
+		this->rina_notify.on_render(render_ticks);
+	}
+
+	this->color_white.a = this->alpha;
+	this->color_black.a = this->alpha;
 
 	color tile_color = color::WHITE;
 	uint8_t t = 0;

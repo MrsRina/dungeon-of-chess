@@ -115,7 +115,7 @@ int main(int argv, char** argc) {
 
 	// After setup settings we init main core and render core.
 	chess::square_size = 60;
-	chess::white_dock = chess::BOTTOM;
+	chess::white_dock = chess::TOP;
 
 	chess_game.init(sdl_win);
 	chess::render::init();

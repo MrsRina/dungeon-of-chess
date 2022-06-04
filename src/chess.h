@@ -17,7 +17,10 @@ struct piece_data {
 };
 
 struct entity_piece {
+	piece_data piece_slot;
+	
 	bool dead;
+	bool the_god_is_trying_to_talk_with_you;
 
 	float x, y, w, h;
 	float previous_x, previous_y;
@@ -26,9 +29,6 @@ struct entity_piece {
 	uint8_t color_factory;
 	uint8_t pos;
 
-	piece_data piece_slot;
-	util::texture texture;
-
 	entity_piece() {}
 	entity_piece(float pos_x, float pos_y, float metrics_w, float metrics_h, uint8_t color, piece_data &_piece_data, util::texture &_texture) {
 		this->x = pos_x;
@@ -36,7 +36,6 @@ struct entity_piece {
 		this->w = metrics_w;
 		this->h = metrics_h;
 		this->piece_slot = _piece_data;
-		this->texture = _texture;
 	}
 
 	void kill(uint8_t the_death_master);
@@ -103,9 +102,9 @@ struct chess {
 	static void set_piece(entity_piece &entity, uint8_t type);
 	static void move(entity_piece &entity, uint8_t pos);
 	static bool entities_bouding_box_collide(entity_piece &entity_1, entity_piece &entity_2);
-	static void relative_height(entity_piece &entity, uint8_t color_factor, float &height);
+	static bool relative_height(entity_piece &entity, uint8_t color_factor, float &height, uint8_t i = 8);
 
-	static void crawl_to_the_ressurection(entity_piece &the_entity, uint8_t pos);
+	static void crawl_to_the_ressurection(entity_piece &the_entity);
 	static void creep_4_tha_death(entity_piece &the_death_as_an_entity_piece);
 
 	util::color color_white = util::color(255, 255, 255, 255), color_black = util::color(0, 0, 0, 255);
@@ -116,11 +115,15 @@ struct chess {
 
 	uint8_t matrix_pos[4];
 	uint8_t focused;
+	uint8_t color_ressure;
+
+	entity_piece rina_notify;
 
 	bool start_pos, end_pos;
 	bool update;
 	bool over;
 	bool gaming;
+	bool ressurection;
 
 	/* Gamemodes in game. */
 	bool gamemode_cycle;
@@ -129,7 +132,7 @@ struct chess {
 	uint8_t concurrent_color_moved;
 	uint8_t previous_color_moved;
 
-	float x, y, w, h, dx, dy, screen_w, screen_h;
+	float x, y, w, h, dx, dy, screen_w, screen_h, my;
 	uint8_t alpha;
 
 	void new_game();
