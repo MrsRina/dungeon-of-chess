@@ -3,8 +3,8 @@
 #include "shader.h"
 
 util::texture chess::texture = util::texture();
-uint8_t chess::white_dock = chess::TOP;
-float chess::square_size = 30;
+uint8_t chess::white_dock    = chess::TOP;
+float chess::square_size     = 30;
 
 piece_data chess::render::queen  = piece_data();
 piece_data chess::render::bishop = piece_data();
@@ -13,9 +13,10 @@ piece_data chess::render::tower  = piece_data();
 piece_data chess::render::horse  = piece_data();
 piece_data chess::render::king   = piece_data();
 
-uint8_t chess::OUT_RANGE = 66;
-uint8_t chess::TOP       = 67;
-uint8_t chess::BOTTOM    = 68;
+uint8_t chess::OUT_RANGE           = 66;
+uint8_t chess::TOP                 = 67;
+uint8_t chess::BOTTOM              = 68;
+uint8_t chess::KILLED_TO_ETERNETIY = 9;
 
 uint8_t chess::piece::EMPTY  = 0;
 uint8_t chess::piece::PAWN   = 1;
@@ -584,6 +585,17 @@ uint8_t chess::matrix::find(uint8_t row, uint8_t col) {
 	return chess::OUT_RANGE;
 }
 
+bool chess::get(entity_piece &pass_entity, uint8_t pos) {
+	for (entity_piece &entity : chess::loaded_entity_list) {
+		if (entity.pos == pos) {
+			pass_entity = entity;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool chess::relative_height(entity_piece &entity, uint8_t color_factory, float &height, uint8_t i) {
 	float full = (chess::square_size * i);
 
@@ -884,7 +896,24 @@ void chess::on_event(SDL_Event &sdl_event) {
 				break;
 			}
 
+			if (this->ressurection && x > this->rina_notify.x && y > this->rina_notify.y && x < this->rina_notify.x + this->rina_notify.w && y < this->rina_notify.y + this->rina_notify.h) {
+				for (entity_piece &entity : chess::loaded_entity_list) {
+					if (entity.pos == this->focused) {
+						entity.set(chess::render::queen);
+						entity.set_color(this->rina_notify.color_factory);
+						chess::render::set_color(entity, chess::render::get_color(entity));
+
+						chess::map[entity.pos].type = chess::piece::QUEEN;
+						break;
+					}
+				}
+
+				this->ressurection = false;
+				break;
+			}
+
 			bool start_flag;
+
 			uint8_t pos;
 			uint8_t new_pos;
 
@@ -925,6 +954,13 @@ void chess::on_event(SDL_Event &sdl_event) {
 			for (entity_piece &entity : chess::loaded_entity_list) {
 				if (entity.dead) {
 					if (this->ressurection && x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && entity.color_factory == this->color_ressure) {
+						for (entity_piece &e : chess::loaded_entity_list) {
+							if (e.pos == this->focused) {
+								e.kill(chess::KILLED_TO_ETERNETIY);
+								break;
+							}
+						}
+
 						entity.w = chess::square_size;
 						entity.h = chess::square_size;
 						entity.ressure(this->focused);
@@ -936,8 +972,6 @@ void chess::on_event(SDL_Event &sdl_event) {
 						entity.y = this->y + (vec[1] * chess::square_size);
 
 						this->ressurection = false;
-
-
 						break;
 					}
 
@@ -1044,7 +1078,7 @@ void chess::on_update(uint64_t delta) {
 
 		// Set position when kill some shit.
 		for (entity_piece &entity : chess::loaded_entity_list) {
-			if (!entity.dead) {
+			if (!entity.dead || entity.color_of_tha_death == chess::KILLED_TO_ETERNETIY) {
 				continue;
 			}
 
@@ -1109,7 +1143,7 @@ void chess::on_render(float render_ticks) {
 		this->rina_notify.w = chess::square_size;
 		this->rina_notify.h = chess::square_size;
 
-		if (chess::relative_height(this->rina_notify, this->color_ressure, height, 7)) {
+		if (chess::relative_height(this->rina_notify, this->color_ressure == 0 ? 1 : 0, height, 7)) {
 			height += rina_notify.h;
 		}
 
@@ -1176,6 +1210,8 @@ void chess::on_render(float render_ticks) {
 	}
 
 	for (entity_piece &entity : chess::loaded_entity_list) {
-		entity.on_render(render_ticks);
+		if (entity.color_of_tha_death != chess::KILLED_TO_ETERNETIY) {
+			entity.on_render(render_ticks);
+		}
 	}
 }

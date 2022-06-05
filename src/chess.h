@@ -50,6 +50,7 @@ struct chess {
 	static uint8_t OUT_RANGE;
 	static uint8_t TOP;
 	static uint8_t BOTTOM;
+	static uint8_t KILLED_TO_ETERNETIY;
 
 	struct piece {
 		static uint8_t PAWN;
@@ -103,6 +104,7 @@ struct chess {
 	static void move(entity_piece &entity, uint8_t pos);
 	static bool entities_bouding_box_collide(entity_piece &entity_1, entity_piece &entity_2);
 	static bool relative_height(entity_piece &entity, uint8_t color_factor, float &height, uint8_t i = 8);
+	static bool get(entity_piece &entity, uint8_t pos);
 
 	static void crawl_to_the_ressurection(entity_piece &the_entity);
 	static void creep_4_tha_death(entity_piece &the_death_as_an_entity_piece);
