@@ -107,7 +107,7 @@ struct chess {
 	static bool get(entity_piece &entity, uint8_t pos);
 
 	static void crawl_to_the_ressurection(entity_piece &the_entity);
-	static void creep_4_tha_death(entity_piece &the_death_as_an_entity_piece);
+	static void creep_4_tha_death(entity_piece &the_death_as_an_entity_piece, uint8_t &entity_type_killed);
 
 	util::color color_white = util::color(255, 255, 255, 255), color_black = util::color(0, 0, 0, 255);
 	std::vector<uint8_t> possible;
@@ -140,8 +140,8 @@ struct chess {
 	void new_game();
 	void end_game();
 	
-	void init(SDL_Window* &sdl_window);
-	void refresh(SDL_Window* &sdl_window);
+	void init(SDL_Window* sdl_window);
+	void refresh(SDL_Window* sdl_window = nullptr);
 	void set_pos(float pos_x, float pos_y);
 	bool contains(uint8_t pos);
 

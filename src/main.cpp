@@ -39,6 +39,10 @@ void on_event(SDL_Event &sdl_event) {
 }
 
 void on_update(uint64_t delta) {
+	if (!chess_game.gaming) {
+		chess_game.new_game();
+	}
+
 	chess_game.on_update(delta);
 }
 
@@ -123,7 +127,6 @@ int main(int argv, char** argc) {
 	// Based on metrics of chess table, set new pos and refresh.
 	chess_game.set_pos((screen_w / 2) - (chess_game.w / 2), (screen_h / 2) - (chess_game.h / 2));
 	chess_game.refresh(sdl_win);
-	chess_game.new_game();
 
 	while (running) {
 		while (SDL_PollEvent(&sdl_event)) {

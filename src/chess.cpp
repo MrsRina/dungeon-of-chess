@@ -640,12 +640,15 @@ void chess::crawl_to_the_ressurection(entity_piece &the_entity) {
 	the_entity.the_god_is_trying_to_talk_with_you = flag;
 }
 
-void chess::creep_4_tha_death(entity_piece &the_death_as_an_entity_piece) {
+void chess::creep_4_tha_death(entity_piece &the_death_as_an_entity_piece, uint8_t &entity_type_killed) {
 	// Verify if an entity pos is equals to the moved piece 'the_death_as_an_entity_piece'.
 	// Always based on color to prevent moved entity self-collide.
 	for (entity_piece &entity : chess::loaded_entity_list) {
 		if (!entity.dead && entity.color_factory != the_death_as_an_entity_piece.color_factory && entity.pos == the_death_as_an_entity_piece.pos && chess::entities_bouding_box_collide(the_death_as_an_entity_piece, entity)) {
 			entity.kill(the_death_as_an_entity_piece.color_factory);
+			entity_type_killed = entity.piece_slot.type;
+
+			// Set to air the concurrent entity.pos.
 			chess::map[entity.pos].type = chess::piece::EMPTY;
 			break;
 		}
@@ -659,28 +662,22 @@ void chess::set_piece(entity_piece &entity, uint8_t type) {
 }
 
 void chess::move(entity_piece &entity, uint8_t pos) {
-	piece_data _piece_data;
-
 	// Set to "air" the old slot.
-	_piece_data = chess::map[entity.pos];
-	_piece_data.type = chess::piece::EMPTY;
-	chess::map[entity.pos] = _piece_data;
+	chess::map[entity.pos].type = chess::piece::EMPTY;
 
 	// Set the new slot.
-	_piece_data = chess::map[pos];
-	_piece_data.type = entity.piece_slot.type;
-	chess::map[pos] = _piece_data;		
+	chess::map[pos].type = entity.piece_slot.type;
 	entity.pos = pos;
 
-	// Set entity position.
 	uint8_t vec[2];
 	chess::matrix::vec(vec, pos);
 
+	// Set entity position.
 	entity.x = chess::map[0].x + (vec[0] * chess::square_size);
 	entity.y = chess::map[0].y + (vec[1] * chess::square_size);
 }
 
-void chess::init(SDL_Window* &sdl_window) {
+void chess::init(SDL_Window* sdl_window) {
 	this->refresh(sdl_window);
 
 	if (!util::file::read_texture(texture, GL_RGBA, "data/textures/chess-symbols.png")) {
@@ -693,12 +690,15 @@ void chess::init(SDL_Window* &sdl_window) {
 void chess::new_game() {
 	this->gaming = true;
 	this->previous_color_moved = 0;
+	this->refresh();
 
+	chess::white_dock = chess::white_dock == chess::TOP ? chess::BOTTOM : chess::TOP;
 	chess::loaded_entity_list.clear();
+
 	uint8_t not_infantry[8] = {piece::TOWER, piece::HORSE, piece::BISHOP, piece::KING, piece::QUEEN, piece::BISHOP, piece::HORSE, piece::TOWER};
+	uint8_t ordened_count = 0;
 
 	bool pawn_sector = true;
-	uint8_t ordened_count = 0;
 
 	for (uint8_t i = 0; i < 16; i++) {
 		entity_piece piece_white, piece_black;
@@ -791,7 +791,14 @@ void chess::new_game() {
 
 			ordened_count++;
 		}
-			
+
+		// Set direct pos.
+		piece_white.previous_x = piece_white.x;
+		piece_white.previous_y = piece_white.y;
+
+		piece_black.previous_x = piece_black.x;
+		piece_black.previous_y = piece_black.y;
+
 		// Add at loaded render list.
 		chess::loaded_entity_list.push_back(piece_white);
 		chess::loaded_entity_list.push_back(piece_black);
@@ -822,12 +829,14 @@ void chess::set_pos(float pos_x, float pos_y) {
 	}
 }
 
-void chess::refresh(SDL_Window* &sdl_window) {
-	int32_t w, h;
-	SDL_GetWindowSize(sdl_window, &w, &h);
+void chess::refresh(SDL_Window* sdl_window) {
+	if (sdl_window != nullptr) {
+		int32_t w, h;
+		SDL_GetWindowSize(sdl_window, &w, &h);
 
-	this->screen_w = (float) w;
-	this->screen_h = (float) h;
+		this->screen_w = (float) w;
+		this->screen_h = (float) h;
+	}
 
 	this->w = 8 * chess::square_size;
 	this->h = 8 * chess::square_size;
@@ -949,6 +958,8 @@ void chess::on_event(SDL_Event &sdl_event) {
 			}
 
 			uint8_t hovered = chess::OUT_RANGE;
+			uint8_t entity_type_killed = 0;
+
 			entity_piece entity;
 
 			for (entity_piece &entity : chess::loaded_entity_list) {
@@ -987,7 +998,7 @@ void chess::on_event(SDL_Event &sdl_event) {
 
 						// Killa section...
 						if (!this->gamemode_godmode) {
-							chess::creep_4_tha_death(entity);
+							chess::creep_4_tha_death(entity, entity_type_killed);
 							chess::crawl_to_the_ressurection(entity);
 						}
 
@@ -995,6 +1006,11 @@ void chess::on_event(SDL_Event &sdl_event) {
 							this->focused = entity.pos;
 							this->color_ressure = entity.color_factory;
 							this->ressurection = true;
+						}
+
+						if (entity_type_killed == chess::piece::KING) {
+							util::log(std::string("YO! ") + std::string((entity.color_factory == 0 ? "white" : "black")) + " side wins!");
+							this->end_game();
 						}
 
 						this->start_pos = false;
@@ -1147,7 +1163,7 @@ void chess::on_render(float render_ticks) {
 			height += rina_notify.h;
 		}
 
-		this->rina_notify.x = this->x - width - offset - offset - chess::square_size;
+		this->rina_notify.x = this->x - width - offset - chess::square_size;
 		this->rina_notify.y = this->y + height;
 		this->rina_notify.set(chess::render::queen);
 		this->rina_notify.set_color(this->color_ressure);
