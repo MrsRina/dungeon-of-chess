@@ -20,11 +20,11 @@ uint8_t chess::KILLED_TO_ETERNETIY = 9;
 
 uint8_t chess::piece::EMPTY  = 0;
 uint8_t chess::piece::PAWN   = 1;
-uint8_t chess::piece::TOWER  = 2;
 uint8_t chess::piece::HORSE  = 3;
-uint8_t chess::piece::BISHOP = 4;
-uint8_t chess::piece::QUEEN  = 5;
-uint8_t chess::piece::KING   = 6;
+uint8_t chess::piece::KING   = 4;
+uint8_t chess::piece::BISHOP = 5;
+uint8_t chess::piece::TOWER  = 6;
+uint8_t chess::piece::QUEEN  = 7;
 
 piece_data chess::map[64] = {};
 std::vector<entity_piece> chess::loaded_entity_list = {};
@@ -518,7 +518,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 	}
 }
 
-void chess::matrix::vec(uint8_t _vec[2], uint8_t pos) {
+void chess::matrix::vec(uint8_t* _vec, uint8_t pos) {
 	uint8_t last_jump = 0;
 	uint8_t iterator = 0;
 

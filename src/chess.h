@@ -88,7 +88,7 @@ struct chess {
 
 		static void align(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2);
 		static void unalign(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2);
-		static void vec(uint8_t _vec[2], uint8_t pos);
+		static void vec(uint8_t* _vec, uint8_t pos);
 		static uint8_t find(uint8_t row, uint8_t col);
 	};
 

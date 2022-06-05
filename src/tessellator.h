@@ -32,7 +32,7 @@ public:
 	static void start(GLint draw_mode, uint32_t draw_count);
 	static void start(GLint draw_mode, uint32_t draw_count, uint32_t draw_vertex_count, uint32_t draw_material_count);
 	static void vertex(float x, float y, float z);
-	static void color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+	static void color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255);
 	static void color(util::color color);
 	static void color(uint8_t alpha);
 	static void uv(float u, float v);

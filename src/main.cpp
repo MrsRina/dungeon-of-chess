@@ -2,14 +2,18 @@
 #include "util.h"
 #include "chess.h"
 #include "tessellator.h"
+#include "ia.h"
 
 uint32_t screen_w = 800;
 uint32_t screen_h = 600;
 
-chess chess_game;
+chess* chess_game = new chess();
+ia_manager* ia_management = new ia_manager();
 SDL_Window* sdl_win;
 
 void on_event(SDL_Event &sdl_event) {
+	chess_game->on_event(sdl_event);
+	
 	switch (sdl_event.type) {
 		case SDL_MOUSEMOTION: {
 			// Set the fx stuff.
@@ -29,8 +33,8 @@ void on_event(SDL_Event &sdl_event) {
 				screen_w = (uint32_t) w;
 				screen_h = (uint32_t) h;
 
-				chess_game.set_pos((screen_w / 2) - (chess_game.w / 2), (screen_h / 2) - (chess_game.h / 2));
-				chess_game.refresh(sdl_win);
+				chess_game->set_pos((screen_w / 2) - (chess_game->w / 2), (screen_h / 2) - (chess_game->h / 2));
+				chess_game->refresh(sdl_win);
 			}
 
 			break;
@@ -39,11 +43,12 @@ void on_event(SDL_Event &sdl_event) {
 }
 
 void on_update(uint64_t delta) {
-	if (!chess_game.gaming) {
-		chess_game.new_game();
+	if (!chess_game->gaming) {
+		chess_game->new_game();
 	}
 
-	chess_game.on_update(delta);
+	chess_game->on_update(delta);
+	ia_management->on_update(delta);
 }
 
 void on_render(float render_ticks) {
@@ -58,7 +63,7 @@ void on_render(float render_ticks) {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
-	chess_game.on_render(render_ticks);
+	chess_game->on_render(render_ticks);
 }
 
 int main(int argv, char** argc) {
@@ -113,20 +118,23 @@ int main(int argv, char** argc) {
 	tessellator::init();
 
 	// Init chess stuff.
-	chess_game.alpha = 200;
-	chess_game.gamemode_godmode = false;
-	chess_game.gamemode_cycle = true;
+	chess_game->alpha = 200;
+	chess_game->gamemode_godmode = false;
+	chess_game->gamemode_cycle = true;
 
 	// After setup settings we init main core and render core.
 	chess::square_size = 60;
 	chess::white_dock = chess::TOP;
 
-	chess_game.init(sdl_win);
+	chess_game->init(sdl_win);
 	chess::render::init();
 
 	// Based on metrics of chess table, set new pos and refresh.
-	chess_game.set_pos((screen_w / 2) - (chess_game.w / 2), (screen_h / 2) - (chess_game.h / 2));
-	chess_game.refresh(sdl_win);
+	chess_game->set_pos((screen_w / 2) - (chess_game->w / 2), (screen_h / 2) - (chess_game->h / 2));
+	chess_game->refresh(sdl_win);
+
+	// Init ia.
+	ia_management->init(chess_game);
 
 	while (running) {
 		while (SDL_PollEvent(&sdl_event)) {
@@ -135,8 +143,8 @@ int main(int argv, char** argc) {
 				break;
 			}
 
+			// Update events.
 			on_event(sdl_event);
-			chess_game.on_event(sdl_event);
 		}
 
 		// Verify the ticks difference.
@@ -174,5 +182,6 @@ int main(int argv, char** argc) {
 
 	util::log("Shutdown complete!");
 
+	delete chess_game;
 	return 0;
 }
