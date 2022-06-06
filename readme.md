@@ -1,6 +1,7 @@
 # dungeon of sdl2
 
 hello this is a chess game made in SDL2 and GL3, with fews of features (working tessellator).
+The game contains a primitve workable IA to play.
 
 # build
 
