@@ -69,6 +69,17 @@ void on_render(float render_ticks) {
 int main(int argv, char** argc) {
 	bool running = true;
 
+	// Rina message.
+	std::string message = "Hello, I am Rina the owner of this project! \n"
+						  "I wrote this game using my ALL SKILLS, I have not use ANY TUTORIAL VID.\n"
+						  "The original idea comes from a friend who challanged me to make one chess game, so I created the IA, but she is not much smart.\n"
+						  "I have not use any web material to build my IA also the game, so this is totally new and pure original.\n"
+						  "Bye, kiss <3.";
+
+	std::cout << "=============================================" << "\n";
+	std::cout << message.c_str()  << "\n";
+	std::cout << "=============================================" << "\n";
+
 	// Init SDL2 and create window.
 	SDL_Init(SDL_INIT_EVERYTHING);
 	sdl_win = SDL_CreateWindow("Dungeon of SDL2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_w, screen_h, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);

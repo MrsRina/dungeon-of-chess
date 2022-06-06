@@ -49,6 +49,7 @@ protected:
 	void send_mouse_click(int32_t x, int32_t y);
 
 	uint8_t get_level(uint8_t type);
+	float get_val(uint8_t pos, uint8_t color);
 public:
 	void phase_collector();
 	void phase_dispatch();
