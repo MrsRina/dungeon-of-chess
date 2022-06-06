@@ -84,7 +84,7 @@ struct chess {
 		static void move(uint8_t &not_matrix_pos, int8_t velocity);
 
 		static bool get(piece_data &_piece_data, uint8_t pos);
-		static void possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col);
+		static void possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col, bool only_death = false);
 
 		static void align(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2);
 		static void unalign(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2);

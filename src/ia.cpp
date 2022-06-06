@@ -17,6 +17,10 @@ uint8_t ia_fragment::get_best_position(ia_fragment &fragment) {
 	return chess::OUT_RANGE;
 }
 
+void ia_fragment::get_level(uint8_t type) {
+
+}
+
 bool ia_fragment::contains(uint8_t pos) {
 	for (uint8_t index_pos : this->possibles) {
 		if (index_pos == pos) {
@@ -25,6 +29,17 @@ bool ia_fragment::contains(uint8_t pos) {
 	}
 
 	return false;
+}
+
+void ia_manager::dispatch(uint8_t start_pos, uint8_t end_pos) {
+	this->click_start_pos = start_pos;	
+	this->click_end_pos = end_pos;
+
+	this->loaded_fragment.clear();
+	this->loaded_entity_dead.clear();
+	this->loaded_fragment_enemy.clear();
+	this->critc_king_fragment.possibles.clear();
+	this->concurrent_possible.clear();
 }
 
 void ia_manager::send_mouse_click(int32_t x, int32_t y) {
@@ -40,6 +55,14 @@ void ia_manager::send_mouse_click(int32_t x, int32_t y) {
 
 void ia_manager::init(chess* instance) {
 	this->chess_game = instance;
+	std::srand(time(0));
+
+	this->level[chess::piece::PAWN] = 1;
+	this->level[chess::piece::HORSE] = 3;
+	this->level[chess::piece::BISHOP] = 3;
+	this->level[chess::piece::KING] = 10;
+	this->level[chess::piece::TOWER] = 5;
+	this->level[chess::piece::QUEEN] = 9;
 }
 
 void ia_manager::phase_collector() {
@@ -53,6 +76,10 @@ void ia_manager::phase_collector() {
 
 		if (entity.color_factory == 0) {
 			continue;
+		}
+
+		if (entity.piece_slot.type == chess::piece::KING) {
+			this->king_pos_enemy = entity.pos;
 		}
 
 		chess::matrix::vec(this->vec, entity.pos);
@@ -88,6 +115,10 @@ void ia_manager::phase_collector() {
 			continue;
 		}
 
+		if (entity.piece_slot.type == chess::piece::KING) {
+			this->king_pos = entity.pos;
+		}
+
 		chess::matrix::vec(this->vec, entity.pos);
 		chess::matrix::possible(this->concurrent_possible, entity.piece_slot.type, 0, this->vec[0], this->vec[1]);
 
@@ -109,61 +140,78 @@ void ia_manager::phase_collector() {
 
 void ia_manager::phase_dispatch() {
 	/* Start of phase disaptch. */
-	uint8_t better_piece_pos = chess::OUT_RANGE;
-	uint8_t better_pos = chess::OUT_RANGE;
-	uint8_t better_type = chess::piece::EMPTY;
-
+	bool hide_king = false;
 	bool flag = false;
 
-	for (ia_fragment &black_fragment : this->loaded_fragment) {
-		for (ia_fragment &white_fragment : this->loaded_fragment_enemy) {
-			if (black_fragment.contains(white_fragment.pos)) {
-				flag = true;
-				break;
+	ia_fragment concurrent_fragment;
+	ia_fragment concurrent_fragment_killer;
+
+	uint8_t start_pos = 0;
+	uint8_t end_pos = 0;
+
+	for (ia_fragment &fragment : this->loaded_fragment_enemy) {
+		chess::matrix::vec(this->vec, fragment.pos);
+		chess::matrix::possible(concurrent_fragment.possibles, fragment.type, 1, this->vec[0], this->vec[1], true);
+
+		for (uint8_t pos : fragment.possibles) {
+			flag = fragment.type == chess::piece::QUEEN || fragment.type == chess::piece::TOWER || fragment.type == chess::piece::HORSE || fragment.type == chess::piece::BISHOP;
+
+			if (flag && (concurrent_fragment.contains(pos) && fragment.type == chess::piece::HORSE)) {
+				hide_king = true;
+				concurrent_fragment_killer.possibles.push_back(pos);
 			}
 		}
+	}
 
-		if (flag) {
+	chess::matrix::vec(this->vec, this->king_pos);
+	chess::matrix::possible(this->critc_king_fragment.possibles, chess::piece::KING, 0, this->vec[0], this->vec[1], true);
+
+	for (uint8_t pos : this->critc_king_fragment.possibles) {
+		if (pos == this->king_pos_enemy) {
+			start_pos = this->king_pos;
+			end_pos = this->king_pos_enemy;
+
 			break;
 		}
 	}
 
-	this->loaded_fragment_result.clear();
+	uint8_t better_pos = chess::piece::EMPTY;
+	uint8_t better_type = chess::piece::EMPTY;
 
-	for (ia_fragment &black_fragment : this->loaded_fragment) {
-		if (flag) {
-			for (ia_fragment &white_fragment : this->loaded_fragment_enemy) {
-				if (black_fragment.contains(white_fragment.pos) && chess::map[white_fragment.pos].type >= better_type) {
-					better_type = chess::map[white_fragment.pos].type;
-					better_piece_pos = black_fragment.pos;
-					better_pos = white_fragment.pos;
+	for (ia_fragment &fragment : this->loaded_fragment) {
+		for (uint8_t pos : fragment.possibles) {
+			if (chess::map[pos].type >= better_type) {
+				better_type = chess::map[pos].type;
+				start_pos = fragment.pos;
+				better_pos = pos;
 
-					util::log("Coletado de algum fragmento.");
-				}
-			}
-			
-			for (uint8_t pos : black_fragment.possibles) {
-				if (chess::map[pos].type >= better_type) {
-					better_type = chess::map[pos].type;
-					better_piece_pos = black_fragment.pos;
-					better_pos = pos;
+				util::log(std::to_string(chess::map[pos].type));
 
-					util::log("Coletado de algum fragmento.");
-				}
+				this->loaded_fragment_result.push_back(fragment);
 			}
 
-			continue;
+			if (pos == this->king_pos_enemy) {
+				start_pos = fragment.pos;
+				end_pos = this->king_pos_enemy;
+				break;
+			}
+
+			if (hide_king && concurrent_fragment_killer.contains(pos)) {
+				start_pos = fragment.pos;
+				better_pos = pos;
+				break;
+			}
 		}
-
-		this->loaded_fragment_result.push_back(black_fragment);
 	}
 
-	if (!flag) {
-		uint8_t count = 0;
-		uint8_t stamp = rand() % util::math::clampi(this->loaded_fragment_result.size(), 0, this->loaded_fragment_result.size() - 1);
+	if (!hide_king && better_type == chess::piece::EMPTY) {
+		uint16_t count = 0;
+		uint16_t stamp = rand() % util::math::clampi(this->loaded_fragment_result.size(), 0, this->loaded_fragment_result.size() - 1);
 
-		uint8_t substamp = 0;
-		uint8_t subcount = 0;
+		uint16_t substamp = 0;
+		uint16_t subcount = 0;
+
+		util::log("Rand, " + std::to_string(stamp));
 
 		for (ia_fragment &fragment : this->loaded_fragment_result) {
 			flag = count >= stamp;
@@ -174,7 +222,7 @@ void ia_manager::phase_dispatch() {
 				for (uint8_t pos : fragment.possibles) {
 					if (subcount >= substamp) {
 						better_type = chess::map[fragment.pos].type;
-						better_piece_pos = fragment.pos;
+						start_pos = fragment.pos;
 						better_pos = pos;
 						break;
 					}
@@ -191,13 +239,12 @@ void ia_manager::phase_dispatch() {
 		}
 	}
 
-	this->click_start_pos = better_piece_pos;	
-	this->click_end_pos = better_pos;
+	if (end_pos != this->king_pos_enemy) {
+		end_pos = better_pos;
+	}
 
-	this->loaded_fragment.clear();
-	this->loaded_entity_dead.clear();
-	this->loaded_fragment_enemy.clear();
-	/* End of pahse dispatch. */
+	this->dispatch(start_pos, end_pos);
+	/* End of phase dispatch. */
 }
 
 void ia_manager::phase_end() {
@@ -225,7 +272,7 @@ void ia_manager::on_update(uint64_t delta) {
 		this->interval = false;
 	}
 
-	if (this->chess_game->previous_color_moved && !this->interval) {
+	if (this->chess_game->previous_color_moved && !this->chess_game->ressurection && !this->interval) {
 		this->phase_collector();
 		this->phase_dispatch();
 		this->phase_end();

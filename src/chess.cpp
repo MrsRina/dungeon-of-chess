@@ -20,11 +20,11 @@ uint8_t chess::KILLED_TO_ETERNETIY = 9;
 
 uint8_t chess::piece::EMPTY  = 0;
 uint8_t chess::piece::PAWN   = 1;
-uint8_t chess::piece::HORSE  = 3;
+uint8_t chess::piece::HORSE  = 2;
+uint8_t chess::piece::BISHOP = 3;
 uint8_t chess::piece::KING   = 4;
-uint8_t chess::piece::BISHOP = 5;
-uint8_t chess::piece::TOWER  = 6;
-uint8_t chess::piece::QUEEN  = 7;
+uint8_t chess::piece::TOWER  = 5;
+uint8_t chess::piece::QUEEN  = 6;
 
 piece_data chess::map[64] = {};
 std::vector<entity_piece> chess::loaded_entity_list = {};
@@ -69,11 +69,11 @@ void chess::render::init() {
 	float width = chess::texture.width / 6;
 	float height = chess::texture.height / 2;
 
-	queen.set(0.0f, 0.0F, width, height);
+	queen.set(width * 1, 0.0F, width, height);
 	queen.type = chess::piece::QUEEN;
 	chess::piece_type_map[chess::piece::QUEEN] = queen;
 
-	king.set(width * 1, 0.0F, width, height);
+	king.set(0.0f, 0.0F, width, height);
 	king.type = chess::piece::KING;
 	chess::piece_type_map[chess::piece::KING] = king;
 
@@ -170,7 +170,7 @@ void chess::matrix::unalign(int8_t* matrix_2x2_1, int8_t* matrix_2x2_2) {
 	matrix_2x2_2[3] = -1;
 }
 
-void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col) {
+void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8_t color_factory, uint8_t row, uint8_t col, bool only_death) {
 	bool white = ((bool) color_factory);
 	bool real = false;
 
@@ -199,7 +199,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		chess::matrix::move(next_col, white ? v_white : v_black);
 
 		// Verify if is moved for first time.
-		if (concurrent_piece.type == chess::piece::PAWN && !concurrent_piece.moved) {
+		if (concurrent_piece.type == chess::piece::PAWN && !concurrent_piece.moved && !only_death) {
 			real = chess::matrix::get(concurrent_piece, chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY;
 			chess::matrix::move(next_col, white ? v_white : v_black);
 
@@ -213,7 +213,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 		}
 
 		// If we can move front and there is not piece there, yes we add it in pos list.
-		if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY) {
+		if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && concurrent_piece.type == chess::piece::EMPTY && !only_death) {
 			pos_list.push_back(pos);
 		}
 
@@ -250,7 +250,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_col : next_row, mask_factor_flag_1[concurrent_mask_i]);
 
 			// Verify if contains an empty slot or if is an enemy.
-			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY && !only_death || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
 			
 			if (real) {
 				pos_list.push_back(pos);
@@ -299,14 +299,14 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_row : next_col, -1);
 
 				// First side.
-				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
+				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY && !only_death || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
 					pos_list.push_back(pos);
 				}
 
 				chess::matrix::move(mask_factor_flag_2[concurrent_mask_i] == 1 ? next_row : next_col, 2);
 
 				// Second/last side.
-				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
+				if (real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY && !only_death || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory))) {
 					pos_list.push_back(pos);
 				}
 
@@ -350,7 +350,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			chess::matrix::move(next_col, mask_factor_flag_2[concurrent_mask_i]);
 
 			// Verify if contains an empty slot or if is an enemy.
-			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY && !only_death || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
 			
 			if (real) {
 				pos_list.push_back(pos);
@@ -409,7 +409,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			}
 
 			// Verify if contains an empty slot or if is an enemy.
-			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY && !only_death || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
 			
 			if (real) {
 				pos_list.push_back(pos);
@@ -478,7 +478,7 @@ void chess::matrix::possible(std::vector<uint8_t> &pos_list, uint8_t type, uint8
 			}
 
 			// Verify if contains an empty slot or if is an enemy.
-			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
+			real = chess::matrix::get(concurrent_piece, pos = chess::matrix::find(next_row, next_col)) && (concurrent_piece.type == chess::piece::EMPTY && !only_death || (concurrent_piece.type != chess::piece::EMPTY && concurrent_piece.color != color_factory));	
 			
 			if (real) {
 				pos_list.push_back(pos);
@@ -695,7 +695,7 @@ void chess::new_game() {
 	chess::white_dock = chess::white_dock == chess::TOP ? chess::BOTTOM : chess::TOP;
 	chess::loaded_entity_list.clear();
 
-	uint8_t not_infantry[8] = {piece::TOWER, piece::HORSE, piece::BISHOP, piece::KING, piece::QUEEN, piece::BISHOP, piece::HORSE, piece::TOWER};
+	uint8_t not_infantry[8] = {piece::TOWER, piece::HORSE, piece::BISHOP, piece::QUEEN, piece::KING, piece::BISHOP, piece::HORSE, piece::TOWER};
 	uint8_t ordened_count = 0;
 
 	bool pawn_sector = true;
@@ -807,6 +807,7 @@ void chess::new_game() {
 
 void chess::end_game() {
 	this->gaming = false;
+	this->ressurection = false;
 }
 
 void chess::set_pos(float pos_x, float pos_y) {
@@ -964,7 +965,7 @@ void chess::on_event(SDL_Event &sdl_event) {
 
 			for (entity_piece &entity : chess::loaded_entity_list) {
 				if (entity.dead) {
-					if (this->ressurection && x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && entity.color_factory == this->color_ressure) {
+					if (this->ressurection && entity.piece_slot.type != chess::piece::PAWN && x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && entity.color_factory == this->color_ressure) {
 						for (entity_piece &e : chess::loaded_entity_list) {
 							if (e.pos == this->focused) {
 								e.kill(chess::KILLED_TO_ETERNETIY);
@@ -1018,7 +1019,7 @@ void chess::on_event(SDL_Event &sdl_event) {
 						this->possible.clear();
 
 						// 0 black; 1 white.
-						this->previous_color_moved = this->concurrent_color_moved;
+						this->previous_color_moved = this->concurrent_color_moved;					
 						break;
 					}
 
