@@ -1139,7 +1139,7 @@ void chess::on_render(float render_ticks) {
 	float offset = width + (width / 2);
 
 	if (this->gamemode_cycle) {
-		float color_fill_factor = this->previous_color_moved ? 0 : 255;
+		uint8_t color_fill_factor = this->previous_color_moved ? 0 : 255;
 
 		// Draw the concurrent color to move.
 		tessellator::fx(fx_manager::light_specular_fx);
@@ -1198,6 +1198,7 @@ void chess::on_render(float render_ticks) {
 		fx_manager::light_specular_fx.use();
 		fx_manager::light_specular_fx.set_float("x", this->start.x + (this->start.w / 2));
 		fx_manager::light_specular_fx.set_float("y", this->start.y + (this->start.h / 2));
+		fx_manager::light_specular_fx.set_float("scale", 1.0f);
 
 		tessellator::fx(fx_manager::light_specular_fx);
 		util::render::shape(this->start.x, this->start.y, this->start.w, this->start.h, util::color(0, 0, 255, 100));
@@ -1214,6 +1215,7 @@ void chess::on_render(float render_ticks) {
 			fx_manager::light_specular_fx.use();
 			fx_manager::light_specular_fx.set_float("x", places.x + (places.w / 2));
 			fx_manager::light_specular_fx.set_float("y", places.y + (places.h / 2));
+			fx_manager::light_specular_fx.set_float("scale", 1.0f);
 
 			tessellator::fx(fx_manager::light_specular_fx);
 			util::render::shape(places.x, places.y, places.w, places.h, util::color(255, 0, 0, 50));
