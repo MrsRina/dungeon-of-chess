@@ -8,6 +8,12 @@
 
 static const float SQUARE_OFFSET = 10.0f;
 
+struct ia_fragment_factor {
+	uint8_t start;
+	uint8_t end;
+	uint8_t factor;
+};
+
 struct ia_fragment {
 	uint8_t pos;
 	uint8_t type;
@@ -30,6 +36,7 @@ protected:
 	std::vector<ia_fragment> loaded_fragment_result;
 	std::vector<ia_fragment> loaded_priority_result;
 
+	std::vector<ia_fragment_factor> loaded_fragment_factor;
 	std::vector<entity_piece> loaded_entity_dead;
 	std::vector<uint8_t> concurrent_possible;
 

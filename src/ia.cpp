@@ -35,12 +35,14 @@ void ia_manager::dispatch(uint8_t start_pos, uint8_t end_pos) {
 	this->click_start_pos = start_pos;	
 	this->click_end_pos = end_pos;
 
-	this->loaded_fragment.clear();
-	this->loaded_entity_dead.clear();
+	this->loaded_fragment_priority_enemy.clear();
 	this->loaded_fragment_enemy.clear();
-	this->critc_king_fragment.possibles.clear();
-	this->concurrent_possible.clear();
+	this->loaded_fragment.clear();
+	this->loaded_fragment_result.clear();
+	this->loaded_priority_result.clear();
+	this->loaded_fragment_factor.clear();
 	this->loaded_entity_dead.clear();
+	this->concurrent_possible.clear();
 }
 
 float ia_manager::get_val(uint8_t pos, uint8_t color) {
@@ -112,34 +114,7 @@ void ia_manager::phase_collector() {
 			continue;
 		}
 
-		if (entity.color_factory) {
-			continue;
-		}
-
-		if (entity.dead) {
-			this->loaded_entity_dead.push_back(entity);
-		}
-	}
-
-	if (this->chess_game->ressurection && chess_game->color_ressure == 0) {
-		int32_t pos_x = chess_game->rina_notify.x + SQUARE_OFFSET;
-		int32_t pos_y = chess_game->rina_notify.x + SQUARE_OFFSET;
-
-		// Click at queen, the most power full piece.
-		this->send_mouse_click(pos_x, pos_y);
-	}
-
-	for (entity_piece &entity : chess::loaded_entity_list) {
-		if (entity.color_factory == chess::KILLED_TO_ETERNETIY) {
-			continue;
-		}
-
-		if (entity.color_factory) {
-			continue;
-		}
-
-		if (entity.dead) {
-			this->loaded_entity_dead.push_back(entity);
+		if (entity.color_factory || entity.dead) {
 			continue;
 		}
 
@@ -151,6 +126,8 @@ void ia_manager::phase_collector() {
 		chess::matrix::possible(this->concurrent_possible, entity.piece_slot.type, 0, this->vec[0], this->vec[1]);
 
 		if (this->concurrent_possible.empty()) {
+			util::log(std::to_string(chess::map[entity.pos].type));
+
 			continue;
 		}
 
@@ -177,11 +154,27 @@ void ia_manager::phase_dispatch() {
 	uint8_t start_pos = 0;
 	uint8_t end_pos = 0;
 
+	ia_fragment_factor concurrent_fragment_factor;
+
 	for (ia_fragment &fragment : this->loaded_fragment_enemy) {
 		chess::matrix::vec(this->vec, fragment.pos);
 		chess::matrix::possible(concurrent_fragment.possibles, fragment.type, 1, this->vec[0], this->vec[1], true);
 
 		for (uint8_t pos : fragment.possibles) {
+			for (ia_fragment &subfragment : this->loaded_fragment) {
+				if (!subfragment.contains(pos)) {
+					continue;
+				}
+
+				concurrent_fragment_factor.start = fragment.pos;
+				concurrent_fragment_factor.end = pos;
+				concurrent_fragment_factor.factor = chess::map[pos].type;
+
+				this->loaded_fragment_factor.push_back(concurrent_fragment_factor);
+
+				//util::log("Fragment factor collected() " + std::to_string(this->loaded_fragment_factor.size()));
+			}
+
 			if (pos == this->king_pos) {
 				hide_king = true;
 
@@ -192,6 +185,30 @@ void ia_manager::phase_dispatch() {
 			}
 		}
 	}
+
+	uint8_t concurrent_factor = 0;
+
+	for (ia_fragment_factor &fragment_factor : this->loaded_fragment_factor) {
+		chess::matrix::vec(this->vec, fragment_factor.start);
+		chess::matrix::possible(this->concurrent_possible, chess::map[fragment_factor.start].type, 0, this->vec[0], this->vec[1]);
+
+		concurrent_factor = 0;
+
+		for (uint8_t pos : this->concurrent_possible) {
+			if (this->get_level(chess::map[pos].type) >= concurrent_factor) {
+				concurrent_factor = this->get_level(chess::map[pos].type);
+				//util::log("Calculating max factor () " + std::to_string(concurrent_factor));
+			}
+		}
+
+		fragment_factor.factor += concurrent_factor;
+		this->concurrent_possible.clear();
+	}
+
+	uint8_t better_pos = chess::piece::EMPTY;
+	uint8_t better_type = chess::piece::EMPTY;
+	uint8_t better_piece = chess::piece::EMPTY;
+	uint8_t better_point = 0;
 
 	chess::matrix::vec(this->vec, this->king_pos);
 	chess::matrix::possible(this->critc_king_fragment.possibles, chess::piece::KING, 0, this->vec[0], this->vec[1], false);
@@ -216,43 +233,24 @@ void ia_manager::phase_dispatch() {
 		return;
 	}
 
-	uint8_t better_pos = chess::piece::EMPTY;
-	uint8_t better_type = this->get_level(chess::piece::KING);
-	uint8_t better_piece = chess::piece::EMPTY;
-	uint8_t better_point = 0;
-
 	ia_fragment concurrent_collection_fragment;
 
 	for (ia_fragment &fragment : this->loaded_fragment) {
 		for (uint8_t pos : fragment.possibles) {
-			for (ia_fragment &subfragment : this->loaded_fragment_enemy) {
-				concurrent_fragment.possibles.clear();
-
-				chess::matrix::vec(this->vec, subfragment.pos);
-				chess::matrix::possible(concurrent_collection_fragment.possibles, fragment.type, 1, this->vec[0], this->vec[1]);
-
-				if (!concurrent_collection_fragment.contains(fragment.pos)) {
-					continue;
-				}
-
-				util::log("Possible fragments collected () " + std::to_string(this->loaded_fragment_result.size()));
-
-				for (uint8_t subpos : concurrent_collection_fragment.possibles) {
-					if (this->get_level(chess::map[subpos].type) < better_type) {
-						better_type = this->get_level(chess::map[subpos].type);
-						this->loaded_fragment.push_back(subfragment);
-					}
-				}
-			}
-
-			if (pos == this->king_pos_enemy) {
+			if (pos == this->king_pos_enemy || chess::map[pos].type == chess::piece::QUEEN) {
 				start_pos = fragment.pos;
 				better_type = chess::map[pos].type;
 				better_pos = pos;
 				stop = true;
 
-				util::log("One checkmate fragment is collected");
+				util::log("One critic fragment is collected");
 				break;
+			}
+
+			if ((chess::map[pos].type == fragment.type && chess::map[pos].type >= better_type) || this->get_level(chess::map[pos].type) >= this->get_level(fragment.type)) {
+				start_pos = fragment.pos;
+				better_type = chess::map[pos].type;
+				better_pos = pos;
 			}
 
 			if (hide_king && concurrent_fragment.pos == pos) {
@@ -271,67 +269,59 @@ void ia_manager::phase_dispatch() {
 		}
 	}
 
-	better_type = chess::piece::EMPTY;
-
 	if (hide_king && better_pos != concurrent_fragment.pos && !stop) {
 		util::log("Start of escapes king !");
 
 		concurrent_fragment.possibles.clear();
 		stop = false;
 
+		start_pos = this->king_pos;
+
 		for (uint8_t pos : this->critc_king_fragment.possibles) {
 			if (concurrent_fragment_killer.contains(pos)) {
 				continue;
 			}
 
-			chess::matrix::vec(this->vec, pos);
-			chess::matrix::possible(concurrent_fragment.possibles, chess::piece::KING, 0, this->vec[0], this->vec[1], false);
+			better_pos = pos;
 
-			for (uint8_t subpos : concurrent_fragment.possibles) {
-				for (ia_fragment &fragment : this->loaded_fragment_enemy) {
-					if (fragment.contains(subpos)) {
-						pass = true;
-						break;
-					}
+			for (ia_fragment &fragment : this->loaded_fragment_enemy) {
+				if (fragment.pos == pos) {
+					stop = true;
+					break;
 				}
-
-				if (pass) {
-					continue;
-				}
-
-				start_pos = this->king_pos;
-				better_pos = pos;
-				stop = true;
-
-				util::log("An escape fragment found !!!");
-				break;
 			}
-
-			concurrent_fragment.possibles.clear();
 
 			if (stop) {
 				break;
 			}
+
+			concurrent_fragment.possibles.clear();
 		}
+
+		util::log("An escape fragment found !!!");
 	}
+
+	pass = false;
 
 	if (!hide_king && better_type == chess::piece::EMPTY && !stop) {
 		better_type = chess::piece::EMPTY;
+		uint8_t size = chess::piece::EMPTY;
 
-		for (ia_fragment &fragment : this->loaded_fragment) {
-			for (ia_fragment &subfragment : this->loaded_fragment_result) {
-				for (uint8_t pos : fragment.possibles) {
-					if (chess::map[pos].type > better_type && pos == subfragment.pos) {
-						start_pos = fragment.pos;
-						better_pos = pos;
-						better_type = chess::map[pos].type;
+		for (ia_fragment_factor &fragment_factor : this->loaded_fragment_factor) {
+			if (size >= fragment_factor.factor) {
+				start_pos = fragment_factor.start;
+				better_pos = fragment_factor.end;
+				size = fragment_factor.factor;
+				better_type = chess::map[start_pos].type;
 
-						util::log("Smart fragment collected.");
-					}
-				}
+				util::log("Fragment factor max () " + std::to_string(better_type));
 			}
 		}
 
+		pass = better_type == chess::piece::EMPTY;
+	}
+
+	if (pass) {
 		uint16_t count = 0;
 		uint16_t stamp = rand() % util::math::clampi(this->loaded_fragment.size(), 0, this->loaded_fragment.size() - 1);
 
@@ -380,7 +370,6 @@ void ia_manager::phase_dispatch() {
 		util::log("IA gave you a checkmate !!!");
 	}
 
-
 	this->dispatch(start_pos, end_pos);
 	/* End of phase dispatch. */
 }
@@ -408,6 +397,14 @@ void ia_manager::phase_end() {
 void ia_manager::on_update(uint64_t delta) {
 	if (this->chess_game->previous_color_moved == 0) {
 		this->interval = false;
+	}
+
+	if (this->chess_game->ressurection && this->chess_game->color_ressure == 0) {
+		int32_t pos_x = chess_game->rina_notify.x + SQUARE_OFFSET;
+		int32_t pos_y = chess_game->rina_notify.y + SQUARE_OFFSET;
+
+		// Click at queen, the most power full piece.
+		this->send_mouse_click(pos_x, pos_y);
 	}
 
 	if (this->chess_game->previous_color_moved && !this->chess_game->ressurection && !this->interval) {
