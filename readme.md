@@ -11,6 +11,11 @@ To build is easy, just import the build file in sublime_text_build.
 I coded this in sublime text so I made this build file.
 The program uses MinGW64, anyway this is not a serious project.
 
+# running
+
+Download the repository using git clone or here direct, after you just open the folder `build/` and launch the executable.  
+I do not see any motive to compile on Linux, but if you want please, thank you. 
+
 # splash
 
 ![Alt text](/splash/splash_gameplay_1.png?raw=true)
