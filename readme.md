@@ -13,8 +13,8 @@ The program uses MinGW64, anyway this is not a serious project.
 
 # running
 
-Download the repository using git clone or here direct, after you just open the folder `build/` and launch the executable.  
-I do not see any motive to compile on Linux, but if you want please, thank you. 
+Download the repository using git clone or here directly, then just open `build/` folder and launch the executable.  
+I do not see any reason to compile under Linux, but if you want to, please, thank you. 
 
 # splash
 
