@@ -906,11 +906,11 @@ void chess::on_event(SDL_Event &sdl_event) {
 				break;
 			}
 
-			if (this->ressurection && x > this->rina_notify.x && y > this->rina_notify.y && x < this->rina_notify.x + this->rina_notify.w && y < this->rina_notify.y + this->rina_notify.h) {
+			if (this->ressurection && x > this->queen_notify.x && y > this->queen_notify.y && x < this->queen_notify.x + this->queen_notify.w && y < this->queen_notify.y + this->queen_notify.h) {
 				for (entity_piece &entity : chess::loaded_entity_list) {
 					if (entity.pos == this->focused) {
 						entity.set(chess::render::queen);
-						entity.set_color(this->rina_notify.color_factory);
+						entity.set_color(this->queen_notify.color_factory);
 						chess::render::set_color(entity, chess::render::get_color(entity));
 
 						chess::map[entity.pos].type = chess::piece::QUEEN;
@@ -1022,11 +1022,9 @@ void chess::on_event(SDL_Event &sdl_event) {
 						this->previous_color_moved = this->concurrent_color_moved;					
 						break;
 					}
-
-					continue;
 				}
 
-				if (x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h && !this->ressurection && (!this->gamemode_cycle || this->gamemode_cycle && this->previous_color_moved != entity.color_factory)) {
+				if ((x > entity.x && y > entity.y && x < entity.x + entity.w && y < entity.y + entity.h) && !this->ressurection && (!this->gamemode_cycle || this->gamemode_cycle && this->previous_color_moved != entity.color_factory)) {
 					this->concurrent_color_moved = entity.color_factory;
 					this->possible.clear();
 
@@ -1157,20 +1155,20 @@ void chess::on_render(float render_ticks) {
 	if (this->ressurection) {
 		float height = 0;
 
-		this->rina_notify.w = chess::square_size;
-		this->rina_notify.h = chess::square_size;
+		this->queen_notify.w = chess::square_size;
+		this->queen_notify.h = chess::square_size;
 
-		if (chess::relative_height(this->rina_notify, this->color_ressure == 0 ? 1 : 0, height, 7)) {
-			height += rina_notify.h;
+		if (chess::relative_height(this->queen_notify, this->color_ressure == 0 ? 1 : 0, height, 7)) {
+			height += queen_notify.h;
 		}
 
-		this->rina_notify.x = this->x - width - offset - chess::square_size;
-		this->rina_notify.y = this->y + height;
-		this->rina_notify.set(chess::render::queen);
-		this->rina_notify.set_color(this->color_ressure);
+		this->queen_notify.x = this->x - width - offset - chess::square_size;
+		this->queen_notify.y = this->y + height;
+		this->queen_notify.set(chess::render::queen);
+		this->queen_notify.set_color(this->color_ressure);
 
-		chess::render::set_color(this->rina_notify, chess::render::get_color(this->rina_notify));
-		this->rina_notify.on_render(render_ticks);
+		chess::render::set_color(this->queen_notify, chess::render::get_color(this->queen_notify));
+		this->queen_notify.on_render(render_ticks);
 	}
 
 	this->color_white.a = this->alpha;

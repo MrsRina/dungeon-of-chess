@@ -119,7 +119,7 @@ struct chess {
 	uint8_t focused;
 	uint8_t color_ressure;
 
-	entity_piece rina_notify;
+	entity_piece queen_notify;
 
 	bool start_pos, end_pos;
 	bool update;

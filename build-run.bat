@@ -1,0 +1,1 @@
+build & cd ./build/win32-build & dungeon-of-chess

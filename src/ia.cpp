@@ -400,8 +400,8 @@ void ia_manager::on_update(uint64_t delta) {
 	}
 
 	if (this->chess_game->ressurection && this->chess_game->color_ressure == 0) {
-		int32_t pos_x = chess_game->rina_notify.x + SQUARE_OFFSET;
-		int32_t pos_y = chess_game->rina_notify.y + SQUARE_OFFSET;
+		int32_t pos_x = chess_game->queen_notify.x + SQUARE_OFFSET;
+		int32_t pos_y = chess_game->queen_notify.y + SQUARE_OFFSET;
 
 		// Click at queen, the most power full piece.
 		this->send_mouse_click(pos_x, pos_y);
