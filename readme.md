@@ -7,7 +7,7 @@ The IA is primitve but is smart at some point.
 
 # license
 
-small please, if you are owner who did the textures, I am sorry, please consider making an issue, and I will add the credits for you.  
+Small please, if you are owner who did the textures, I am sorry, please consider making an issue, and I will add the credits for you.  
 This project is learning purpose, and not even comercial thank.
 
 # build
