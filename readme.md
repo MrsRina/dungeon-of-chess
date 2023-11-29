@@ -12,7 +12,7 @@ This project is learning purpose, and not even comercial, thank.
 
 # build
 
-There is two options for building, directly g++ command, or using CMake, I obvious recommend you use CMake.
+There are two options for building, directly g++ command, or using CMake, I obvious recommend you use CMake.
 the project now support Unix & Linux, if you want to build under Unix & Linux, open and read the commands used in `build.bat`.
 The makefile generated used here was Ninja, so, I recommed installing [Ninja](https://ninja-build.org/).
 
