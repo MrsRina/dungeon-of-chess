@@ -5,6 +5,11 @@ The game contains a primitve workable IA to play.
 
 The IA is primitve but is smart at some point.
 
+# license
+
+small please, if you are owner who did the textures, I am sorry, please consider making an issue, and I will add the credits for you.  
+This project is learning purpose, and not even comercial thank.
+
 # build
 
 There is two options for building, directly g++ command, or using CMake, I obvious recommend you use CMake.
