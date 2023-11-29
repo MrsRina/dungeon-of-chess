@@ -14,7 +14,7 @@ The makefile generated used here was Ninja, so, I recommed installing [Ninja](ht
 Libs necessary:
 [SDL 2.28.5](https://github.com/libsdl-org/SDL/releases/tag/release-2.28.5), [SDL Image 2.6.3](https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3), and [GLEW](https://glew.sourceforge.net/).
 
-Also, if your in any Linux-based OS, install with the package-manager the devel libs necessary.
+Also, if you are on any Linux-based OS, install with the package-manager the devel libs necessary.
 ```sh
 # arch
 sudo pacman libsd2l-dev libsdl2-image-dev libglew-dev
